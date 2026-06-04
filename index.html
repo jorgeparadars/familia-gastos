@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Familia Gastos">
+<title>Familia Gastos</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; }
+:root {
+  --teal: #1A7F6E;
+  --teal-light: #E8F5F2;
+  --teal-dark: #125C50;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --text-secondary: #666;
+  --bg: #fff;
+  --bg-secondary: #f8f8f8;
+  --red: #c0392b;
+  --red-light: #fff5f5;
+}
+.app { max-width: 420px; margin: 0 auto; background: var(--bg); min-height: 100vh; position: relative; }
+
+/* ── PANTALLA SETUP (primer uso) ── */
+.setup-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; }
+.setup-screen.hidden { display: none; }
+.setup-logo { width: 72px; height: 72px; border-radius: 20px; background: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 1.5rem; }
+.setup-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; text-align: center; }
+.setup-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; text-align: center; line-height: 1.5; }
+.setup-form { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+.setup-field label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 5px; }
+.setup-field input { width: 100%; padding: 13px 14px; font-size: 16px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-family: inherit; outline: none; }
+.setup-field input:focus { border-color: var(--teal); }
+.setup-hint { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+/* ── PANTALLA SELECCIÓN USUARIO ── */
+.user-select-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; }
+.user-select-screen.hidden { display: none; }
+.user-select-logo { width: 64px; height: 64px; border-radius: 16px; background: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 1.5rem; }
+.user-select-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.user-select-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; }
+.user-list { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.user-card { width: 100%; padding: 18px; border-radius: 16px; border: 1.5px solid var(--border); background: var(--bg); cursor: pointer; text-align: left; transition: all 0.15s; font-family: inherit; display: flex; align-items: center; gap: 14px; }
+.user-card:active { transform: scale(0.98); }
+.user-card.primary { border-color: var(--teal); background: var(--teal-light); }
+.user-avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #e8e8e8; flex-shrink: 0; }
+.user-card.primary .user-avatar { background: var(--teal); color: #fff; }
+.user-name { font-size: 16px; font-weight: 600; color: var(--text); }
+.user-role { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── HEADER ── */
+.header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg); position: sticky; top: 0; z-index: 10; }
+.header-title { font-size: 17px; font-weight: 700; color: var(--text); }
+.header-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+.header-user { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.header-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
+.header-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.header-switch { font-size: 10px; color: var(--text-secondary); }
+
+/* ── NAVEGACIÓN ── */
+.main-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
+.nav-btn { padding: 11px 4px; text-align: center; font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+.nav-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+.status-bar { height: 3px; background: #eee; }
+.status-fill { height: 100%; background: var(--teal); width: 0%; transition: width 0.3s; }
+
+.screen { padding: 1.25rem; }
+.screen.hidden { display: none; }
+
+/* ── CAMPOS ── */
+.label { font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.field-group { margin-bottom: 1.1rem; }
+select, input[type="text"], input[type="number"], textarea {
+  width: 100%; padding: 11px 13px; font-size: 15px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text);
+  font-family: inherit; appearance: none; -webkit-appearance: none;
+  outline: none; transition: border-color 0.15s;
+}
+select:focus, input:focus, textarea:focus { border-color: var(--teal); }
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 34px; }
+textarea { resize: none; height: 85px; line-height: 1.5; }
+
+/* ── TABS CAPTURA ── */
+.capture-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1.1rem; }
+.capture-tab { padding: 10px 6px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; text-align: center; transition: all 0.15s; }
+.capture-tab.active { border-color: var(--teal); background: var(--teal-light); }
+.capture-tab-icon { font-size: 22px; display: block; margin-bottom: 3px; }
+.capture-tab span { font-size: 11px; color: var(--text-secondary); }
+.capture-tab.active span { color: var(--teal-dark); font-weight: 600; }
+.capture-panel { display: none; }
+.capture-panel.active { display: block; }
+
+/* ── FOTO ── */
+.photo-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem 1rem; text-align: center; cursor: pointer; background: var(--bg-secondary); transition: all 0.15s; position: relative; min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.photo-zone:hover { border-color: var(--teal); background: var(--teal-light); }
+.photo-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.photo-zone-icon { font-size: 36px; }
+.photo-zone p { font-size: 14px; color: var(--text-secondary); }
+.photo-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 8px; display: none; }
+
+/* ── VOZ ── */
+.voice-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem 1rem; text-align: center; background: var(--bg-secondary); transition: all 0.2s; margin-bottom: 10px; }
+.voice-zone.listening { border-color: var(--teal); background: var(--teal-light); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+.mic-btn { width: 72px; height: 72px; border-radius: 50%; background: var(--teal); border: none; cursor: pointer; font-size: 30px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 14px rgba(26,127,110,0.3); }
+.mic-btn.recording { background: var(--red); box-shadow: 0 4px 18px rgba(192,57,43,0.4); transform: scale(1.08); }
+.mic-btn:active { transform: scale(0.95); }
+.voice-status { font-size: 13px; color: var(--text-secondary); margin-top: 10px; }
+.voice-status.active { color: var(--teal); font-weight: 600; }
+.voice-transcript { width: 100%; margin-top: 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; color: var(--text); min-height: 48px; line-height: 1.5; font-style: italic; display: none; }
+.voice-transcript.visible { display: block; }
+
+/* ── IA ── */
+.ai-loading { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; margin-top: 10px; }
+.ai-loading.visible { display: flex; }
+.spinner { width: 24px; height: 24px; border: 2.5px solid #eee; border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-loading p { font-size: 13px; color: var(--text-secondary); }
+.ai-result { background: var(--bg-secondary); border-radius: 12px; padding: 12px; margin-top: 10px; display: none; border: 1px solid #eee; }
+.ai-result.visible { display: block; }
+.ai-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--teal-dark); background: var(--teal-light); padding: 3px 10px; border-radius: 20px; margin-bottom: 10px; }
+.ai-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee; }
+.ai-row:last-child { border-bottom: none; }
+.ai-row-label { font-size: 12px; color: var(--text-secondary); }
+.ai-row-val { font-size: 13px; font-weight: 600; color: var(--text); text-align: right; max-width: 60%; }
+
+/* ── BOTONES ── */
+.btn-primary { width: 100%; padding: 14px; background: var(--teal); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 0.5rem; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary:active:not(:disabled) { opacity: 0.85; }
+.btn-secondary { width: 100%; padding: 11px; background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 8px; transition: background 0.15s; }
+.btn-secondary:active { background: var(--bg-secondary); }
+.char-count { font-size: 11px; color: #aaa; text-align: right; margin-top: 4px; }
+
+/* ── ÉXITO ── */
+.success-screen { text-align: center; padding: 2.5rem 1.25rem; }
+.success-icon { width: 68px; height: 68px; border-radius: 50%; background: var(--teal-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 32px; }
+.success-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.success-detail { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem; }
+.success-card { background: var(--bg-secondary); border-radius: 12px; padding: 1rem; text-align: left; margin-bottom: 1.5rem; border: 1px solid #eee; }
+.success-card-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
+.success-card-row:last-child { border-bottom: none; }
+.success-card-label { font-size: 12px; color: var(--text-secondary); }
+.success-card-val { font-size: 13px; font-weight: 600; color: var(--text); text-align: right; }
+
+/* ── ERROR ── */
+.error-msg { background: #fff5f5; border: 1px solid #ffd0d0; border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--red); margin-top: 10px; display: none; }
+.error-msg.visible { display: block; }
+
+/* ── DASHBOARD ── */
+.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.dash-month { font-size: 16px; font-weight: 700; color: var(--text); }
+.dash-nav { display: flex; gap: 4px; }
+.dash-nav button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.dash-filter { display: flex; gap: 8px; margin-bottom: 1.1rem; }
+.dash-filter-btn { flex: 1; padding: 7px 4px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; text-align: center; font-family: inherit; transition: all 0.15s; }
+.dash-filter-btn.active { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); font-weight: 600; }
+.dash-total { background: var(--teal); border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+.dash-total-label { font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 2px; }
+.dash-total-val { font-size: 28px; font-weight: 700; color: #fff; }
+.dash-total-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+.dash-total-icon { font-size: 36px; opacity: 0.6; }
+.cat-bar-item { margin-bottom: 12px; }
+.cat-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.cat-bar-name { font-size: 13px; color: var(--text); font-weight: 500; }
+.cat-bar-monto { font-size: 13px; font-weight: 700; color: var(--text); }
+.cat-bar-track { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+.cat-bar-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: width 0.5s ease; }
+.cat-bar-pct { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+.dash-loading { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 14px; }
+
+/* ── HISTORIAL ── */
+.hist-filters { display: flex; gap: 8px; margin-bottom: 1rem; }
+.hist-filter-btn { flex: 1; padding: 7px 4px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; text-align: center; font-family: inherit; transition: all 0.15s; }
+.hist-filter-btn.active { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); font-weight: 600; }
+.hist-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f2f2f2; }
+.hist-item:last-child { border-bottom: none; }
+.hist-cat-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.hist-info { flex: 1; min-width: 0; }
+.hist-concepto { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.hist-right { text-align: right; flex-shrink: 0; }
+.hist-monto { font-size: 15px; font-weight: 700; color: var(--text); }
+.hist-persona { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.hist-loading { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 14px; }
+
+/* ── CONFIG ── */
+.config-section { margin-bottom: 1.5rem; }
+.config-section-title { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+.config-card { background: var(--bg-secondary); border-radius: 14px; border: 1px solid var(--border); padding: 1rem; }
+.config-user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.config-user-row:last-child { margin-bottom: 0; }
+.config-user-num { width: 32px; height: 32px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.config-save-msg { font-size: 13px; color: var(--teal); text-align: center; margin-top: 10px; display: none; font-weight: 600; }
+.config-save-msg.visible { display: block; }
+.config-info { background: var(--teal-light); border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--teal-dark); line-height: 1.5; margin-bottom: 1rem; }
+.supabase-url-field { font-size: 12px; }
+
+/* ── AJUSTE RESPONSIVE ── */
+@media (max-width: 380px) {
+  .capture-tabs { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .capture-tab-icon { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SETUP (primer uso) ── -->
+  <div id="setupScreen" class="setup-screen hidden">
+    <div class="setup-logo">🏠</div>
+    <div class="setup-title">Bienvenido a Familia Gastos</div>
+    <div class="setup-sub">Configura los nombres una sola vez.<br>Cada dispositivo recuerda quién eres.</div>
+    <div class="setup-form">
+      <div class="setup-field">
+        <label>Usuario 1 — tú</label>
+        <input type="text" id="setupNombre1" placeholder="Ej: Jorge" maxlength="30">
+      </div>
+      <div class="setup-field">
+        <label>Usuario 2 — tu esposa</label>
+        <input type="text" id="setupNombre2" placeholder="Ej: Diana" maxlength="30">
+      </div>
+      <div class="setup-field">
+        <label>URL Supabase</label>
+        <input type="text" id="setupUrl" placeholder="https://xxxx.supabase.co" class="supabase-url-field">
+      </div>
+      <div class="setup-field">
+        <label>API Key Supabase (anon public)</label>
+        <input type="text" id="setupKey" placeholder="sb_publishable_..." class="supabase-url-field">
+      </div>
+      <div class="error-msg" id="setupError"></div>
+      <button class="btn-primary" onclick="guardarSetup()">Guardar y continuar →</button>
+    </div>
+  </div>
+
+  <!-- ── SELECCIÓN USUARIO ── -->
+  <div id="userSelectScreen" class="user-select-screen hidden">
+    <div class="user-select-logo">🏠</div>
+    <div class="user-select-title">Familia Gastos</div>
+    <div class="user-select-sub">¿Quién registra?</div>
+    <div class="user-list" id="userList"></div>
+  </div>
+
+  <!-- ── APP PRINCIPAL ── -->
+  <div id="mainApp" class="hidden">
+    <div class="header">
+      <div>
+        <div class="header-title">Familia Gastos</div>
+        <div class="header-sub" id="headerSub">Efectivo</div>
+      </div>
+      <div class="header-user" onclick="cambiarUsuario()">
+        <div class="header-avatar" id="headerAvatarEmoji">👤</div>
+        <div>
+          <div class="header-name" id="headerName"></div>
+          <div class="header-switch">Cambiar</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-nav">
+      <button class="nav-btn active" onclick="showMainTab('capturar')">✏️ Capturar</button>
+      <button class="nav-btn" onclick="showMainTab('dashboard')">📊 Mes</button>
+      <button class="nav-btn" onclick="showMainTab('historial')">📋 Historial</button>
+    </div>
+    <div class="status-bar"><div class="status-fill" id="statusFill"></div></div>
+
+    <!-- ── TAB CAPTURAR ── -->
+    <div id="tabCapturar">
+      <div class="screen" id="screenForm">
+        <div class="field-group">
+          <div class="label">Registrando como</div>
+          <div id="usuarioDisplay" style="padding:11px 13px;font-size:15px;border:1px solid var(--border);border-radius:10px;color:var(--text);background:var(--bg-secondary);font-weight:600;"></div>
+        </div>
+
+        <div class="field-group">
+          <div class="label">Método de captura</div>
+          <div class="capture-tabs">
+            <div class="capture-tab active" onclick="switchCaptureTab('foto')">
+              <span class="capture-tab-icon">📷</span>
+              <span>Foto ticket</span>
+            </div>
+            <div class="capture-tab" onclick="switchCaptureTab('voz')">
+              <span class="capture-tab-icon">🎤</span>
+              <span>Dictado</span>
+            </div>
+            <div class="capture-tab" onclick="switchCaptureTab('manual')">
+              <span class="capture-tab-icon">⌨️</span>
+              <span>Manual</span>
+            </div>
+          </div>
+
+          <!-- PANEL FOTO -->
+          <div class="capture-panel active" id="panelFoto">
+            <div class="photo-zone" id="photoZone">
+              <span class="photo-zone-icon">📸</span>
+              <p id="photoLabel">Toca para tomar foto o seleccionar imagen</p>
+              <input type="file" accept="image/*" capture="environment" id="fileInput" onchange="handlePhoto(this)">
+            </div>
+            <img id="photoPreview" class="photo-preview">
+            <div class="ai-loading" id="aiLoadingFoto">
+              <div class="spinner"></div>
+              <p>Leyendo ticket con IA...</p>
+            </div>
+            <div class="ai-result" id="aiResultFoto">
+              <div class="ai-tag">✨ Extraído por IA</div>
+              <div id="aiRowsFoto"></div>
+            </div>
+          </div>
+
+          <!-- PANEL VOZ -->
+          <div class="capture-panel" id="panelVoz">
+            <div class="voice-zone" id="voiceZone">
+              <button class="mic-btn" id="micBtn" onclick="toggleVoice()">🎤</button>
+              <div class="voice-status" id="voiceStatus">Toca el micrófono para dictar</div>
+            </div>
+            <div class="voice-transcript" id="voiceTranscript"></div>
+            <button class="btn-secondary" id="btnInterpretarVoz" onclick="procesarTextoVoz()" style="display:none">✨ Interpretar con IA</button>
+            <div class="ai-loading" id="aiLoadingVoz">
+              <div class="spinner"></div>
+              <p>Interpretando con IA...</p>
+            </div>
+            <div class="ai-result" id="aiResultVoz">
+              <div class="ai-tag">✨ Extraído por IA</div>
+              <div id="aiRowsVoz"></div>
+            </div>
+          </div>
+
+          <!-- PANEL MANUAL -->
+          <div class="capture-panel" id="panelManual">
+            <div class="field-group">
+              <div class="label">Categoría</div>
+              <select id="categoriaManual">
+                <option value="">Selecciona...</option>
+                <option value="Casa">🏠 Casa</option>
+                <option value="Comida">🛒 Comida</option>
+                <option value="Salud">💊 Salud</option>
+                <option value="Educación">📚 Educación</option>
+                <option value="Vehículos">🚗 Vehículos</option>
+                <option value="Gasolina">⛽ Gasolina</option>
+                <option value="Country">⛳ Country</option>
+                <option value="Entretenimiento">🎬 Entretenimiento</option>
+                <option value="Ropa">👕 Ropa</option>
+                <option value="Viajes">✈️ Viajes</option>
+                <option value="Servicios">💡 Servicios</option>
+                <option value="Donaciones">❤️ Donaciones</option>
+                <option value="Alcohol">🍷 Alcohol</option>
+                <option value="Takeout">🥡 Takeout</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <div class="label">Concepto</div>
+              <input type="text" id="conceptoManual" placeholder="¿En qué se gastó?">
+            </div>
+            <div class="field-group">
+              <div class="label">Lugar / Proveedor</div>
+              <input type="text" id="proveedorManual" placeholder="Tienda, restaurante, etc.">
+            </div>
+            <div class="field-group" style="margin-bottom:0">
+              <div class="label">Monto ($)</div>
+              <input type="number" id="montoManual" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+        <button class="btn-primary" id="btnRegistrar" onclick="registrarGasto()">✓ Registrar gasto</button>
+      </div>
+
+      <div class="screen hidden" id="screenSuccess">
+        <div class="success-screen">
+          <div class="success-icon">✓</div>
+          <div class="success-title">Gasto registrado</div>
+          <div class="success-detail" id="successDetail"></div>
+          <div class="success-card" id="successCard"></div>
+          <button class="btn-primary" onclick="nuevoGasto()">+ Registrar otro</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB DASHBOARD ── -->
+    <div id="tabDashboard" class="hidden">
+      <div class="screen">
+        <div class="dash-header">
+          <div class="dash-month" id="dashMonth"></div>
+          <div class="dash-nav">
+            <button onclick="cambiarMes(-1)">‹</button>
+            <button onclick="cambiarMes(1)">›</button>
+          </div>
+        </div>
+        <div class="dash-filter" id="dashFilter">
+          <button class="dash-filter-btn active" onclick="setDashFilter('todos')">Todos</button>
+          <button class="dash-filter-btn" id="dashFilterU1" onclick="setDashFilter('u1')"></button>
+          <button class="dash-filter-btn" id="dashFilterU2" onclick="setDashFilter('u2')"></button>
+        </div>
+        <div id="dashContent"><div class="dash-loading">Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- ── TAB HISTORIAL ── -->
+    <div id="tabHistorial" class="hidden">
+      <div class="screen">
+        <div class="hist-filters" id="histFilters">
+          <button class="hist-filter-btn active" onclick="setHistFilter('todos')">Todos</button>
+          <button class="hist-filter-btn" id="histFilterU1" onclick="setHistFilter('u1')"></button>
+          <button class="hist-filter-btn" id="histFilterU2" onclick="setHistFilter('u2')"></button>
+        </div>
+        <div id="histContent"><div class="hist-loading">Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- ── TAB CONFIG (oculto, accesible desde header) ── -->
+    <div id="tabConfig" class="hidden">
+      <div class="screen">
+        <div class="config-info">
+          Estos cambios aplican para todos los dispositivos. Comparte la app con tu esposa enviándole el archivo HTML — ella verá los mismos datos en tiempo real.
+        </div>
+        <div class="config-section">
+          <div class="config-section-title">Usuarios</div>
+          <div class="config-card">
+            <div class="config-user-row">
+              <div class="config-user-num">1</div>
+              <input type="text" id="configNombre1" placeholder="Usuario 1" style="margin:0">
+            </div>
+            <div class="config-user-row" style="margin-bottom:0">
+              <div class="config-user-num">2</div>
+              <input type="text" id="configNombre2" placeholder="Usuario 2" style="margin:0">
+            </div>
+          </div>
+        </div>
+        <div class="config-section">
+          <div class="config-section-title">Conexión Supabase</div>
+          <div class="config-card">
+            <div class="field-group">
+              <div class="label">URL</div>
+              <input type="text" id="configUrl" placeholder="https://xxxx.supabase.co" class="supabase-url-field">
+            </div>
+            <div class="field-group" style="margin-bottom:0">
+              <div class="label">API Key (anon public)</div>
+              <input type="text" id="configKey" placeholder="sb_publishable_..." class="supabase-url-field">
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="guardarConfig()">Guardar cambios</button>
+        <div class="config-save-msg" id="configSaveMsg">✓ Cambios guardados</div>
+      </div>
+    </div>
+
+  </div><!-- /mainApp -->
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// ESTADO GLOBAL
+// ─────────────────────────────────────────────
+let SUPABASE_URL = '';
+let SUPABASE_KEY = '';
+let NOMBRES = { u1: '', u2: '' };
+let currentUser = null;   // 'u1' | 'u2'
+let currentCaptureTab = 'foto';
+let extractedData = {};
+let recognition = null;
+let isRecording = false;
+let voiceText = '';
+let dashMes = null;       // { year, month } (1-indexed)
+let dashFilter = 'todos';
+let histFilter = 'todos';
+
+const CAT_ICONS = {
+  'Casa':'🏠','Comida':'🛒','Salud':'💊','Educación':'📚',
+  'Vehículos':'🚗','Gasolina':'⛽','Country':'⛳','Entretenimiento':'🎬',
+  'Ropa':'👕','Viajes':'✈️','Servicios':'💡','Donaciones':'❤️',
+  'Alcohol':'🍷','Takeout':'🥡','Otros':'📦'
+};
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+function init() {
+  const cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
+  if (!cfg.u1 || !cfg.u2 || !cfg.url || !cfg.key) {
+    document.getElementById('setupScreen').classList.remove('hidden');
+    return;
+  }
+  NOMBRES.u1 = cfg.u1;
+  NOMBRES.u2 = cfg.u2;
+  SUPABASE_URL = cfg.url;
+  SUPABASE_KEY = cfg.key;
+
+  // Rellenar filtros dinámicos
+  document.getElementById('dashFilterU1').textContent = NOMBRES.u1;
+  document.getElementById('dashFilterU2').textContent = NOMBRES.u2;
+  document.getElementById('histFilterU1').textContent = NOMBRES.u1;
+  document.getElementById('histFilterU2').textContent = NOMBRES.u2;
+
+  const savedUser = localStorage.getItem('familia_user');
+  if (savedUser === 'u1' || savedUser === 'u2') {
+    currentUser = savedUser;
+    iniciarApp();
+  } else {
+    mostrarSeleccionUsuario();
+  }
+}
+
+// ─────────────────────────────────────────────
+// SETUP (primer uso)
+// ─────────────────────────────────────────────
+function guardarSetup() {
+  const n1 = document.getElementById('setupNombre1').value.trim();
+  const n2 = document.getElementById('setupNombre2').value.trim();
+  const url = document.getElementById('setupUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('setupKey').value.trim();
+  const err = document.getElementById('setupError');
+
+  if (!n1 || !n2) { showSetupError('Ingresa los dos nombres.'); return; }
+  if (!url.startsWith('https://')) { showSetupError('La URL debe empezar con https://'); return; }
+  if (!key) { showSetupError('Ingresa el API Key.'); return; }
+
+  localStorage.setItem('familia_config', JSON.stringify({ u1: n1, u2: n2, url, key }));
+  err.classList.remove('visible');
+  init();
+}
+
+function showSetupError(msg) {
+  const el = document.getElementById('setupError');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+// ─────────────────────────────────────────────
+// SELECCIÓN DE USUARIO
+// ─────────────────────────────────────────────
+function mostrarSeleccionUsuario() {
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('userSelectScreen').classList.remove('hidden');
+
+  document.getElementById('userList').innerHTML = `
+    <button class="user-card primary" onclick="selectUser('u1')">
+      <div class="user-avatar">👤</div>
+      <div>
+        <div class="user-name">${NOMBRES.u1}</div>
+        <div class="user-role">Usuario 1</div>
+      </div>
+    </button>
+    <button class="user-card" onclick="selectUser('u2')">
+      <div class="user-avatar">👤</div>
+      <div>
+        <div class="user-name">${NOMBRES.u2}</div>
+        <div class="user-role">Usuario 2</div>
+      </div>
+    </button>`;
+}
+
+function selectUser(uid) {
+  currentUser = uid;
+  localStorage.setItem('familia_user', uid);
+  iniciarApp();
+}
+
+function cambiarUsuario() {
+  localStorage.removeItem('familia_user');
+  currentUser = null;
+  document.getElementById('mainApp').classList.add('hidden');
+  mostrarSeleccionUsuario();
+}
+
+function iniciarApp() {
+  document.getElementById('userSelectScreen').classList.add('hidden');
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+
+  const nombre = NOMBRES[currentUser];
+  document.getElementById('headerName').textContent = nombre;
+  document.getElementById('usuarioDisplay').textContent = nombre;
+
+  const now = new Date();
+  dashMes = { year: now.getFullYear(), month: now.getMonth() + 1 };
+
+  showMainTab('capturar');
+}
+
+// ─────────────────────────────────────────────
+// TABS PRINCIPALES
+// ─────────────────────────────────────────────
+function showMainTab(tab) {
+  const tabs = ['capturar', 'dashboard', 'historial'];
+  const btns = document.querySelectorAll('.nav-btn');
+  btns.forEach((b, i) => b.classList.toggle('active', tabs[i] === tab));
+  document.getElementById('tabCapturar').classList.toggle('hidden', tab !== 'capturar');
+  document.getElementById('tabDashboard').classList.toggle('hidden', tab !== 'dashboard');
+  document.getElementById('tabHistorial').classList.toggle('hidden', tab !== 'historial');
+  document.getElementById('tabConfig').classList.add('hidden');
+
+  if (tab === 'dashboard') cargarDashboard();
+  if (tab === 'historial') cargarHistorial();
+}
+
+// ─────────────────────────────────────────────
+// TABS CAPTURA
+// ─────────────────────────────────────────────
+function switchCaptureTab(tab) {
+  currentCaptureTab = tab;
+  extractedData = {};
+  document.querySelectorAll('.capture-tab').forEach((t, i) => {
+    t.classList.toggle('active', ['foto', 'voz', 'manual'][i] === tab);
+  });
+  document.querySelectorAll('.capture-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+  // Detener grabación si cambia tab
+  if (tab !== 'voz' && isRecording) stopVoice();
+}
+
+// ─────────────────────────────────────────────
+// FOTO → IA
+// ─────────────────────────────────────────────
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxSize = 1024;
+      let w = img.width, h = img.height;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else { w = Math.round(w * maxSize / h); h = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      res(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    };
+    img.onerror = rej;
+    img.src = url;
+  });
+}
+
+async function handlePhoto(input) {
+  if (!input.files[0]) return;
+  const file = input.files[0];
+  const preview = document.getElementById('photoPreview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+  document.getElementById('photoLabel').textContent = '✓ ' + file.name;
+  document.getElementById('aiLoadingFoto').classList.add('visible');
+  document.getElementById('aiResultFoto').classList.remove('visible');
+  try {
+    const base64 = await toBase64(file);
+    const result = await callClaudeImagen(base64);
+    extractedData = result;
+    renderAiRows('aiRowsFoto', result);
+    document.getElementById('aiResultFoto').classList.add('visible');
+  } catch(e) {
+    showError('No se pudo leer el ticket. Intenta de nuevo o usa captura manual.');
+    console.error(e);
+  }
+  document.getElementById('aiLoadingFoto').classList.remove('visible');
+}
+
+async function callClaudeImagen(base64) {
+  const resp = await fetch('/api/extract', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64, mediaType: 'image/jpeg' })
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  return await resp.json();
+}
+
+// ─────────────────────────────────────────────
+// VOZ → IA (Web Speech API nativa)
+// ─────────────────────────────────────────────
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return null;
+  const rec = new SpeechRecognition();
+  rec.lang = 'es-MX';
+  rec.continuous = false;
+  rec.interimResults = true;
+
+  rec.onresult = (e) => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    voiceText = transcript;
+    const el = document.getElementById('voiceTranscript');
+    el.textContent = transcript;
+    el.classList.add('visible');
+  };
+
+  rec.onend = () => {
+    stopVoice();
+    if (voiceText.trim()) {
+      document.getElementById('btnInterpretarVoz').style.display = 'block';
+    }
+  };
+
+  rec.onerror = (e) => {
+    stopVoice();
+    if (e.error === 'not-allowed') {
+      showError('Permiso de micrófono denegado. Habilítalo en la configuración del navegador.');
+    }
+  };
+
+  return rec;
+}
+
+function toggleVoice() {
+  if (isRecording) { stopVoice(); return; }
+
+  if (!recognition) recognition = initSpeechRecognition();
+  if (!recognition) {
+    showError('Tu navegador no soporta dictado de voz. Usa Chrome o Safari.');
+    return;
+  }
+
+  voiceText = '';
+  document.getElementById('voiceTranscript').textContent = '';
+  document.getElementById('voiceTranscript').classList.remove('visible');
+  document.getElementById('btnInterpretarVoz').style.display = 'none';
+  document.getElementById('aiResultVoz').classList.remove('visible');
+  extractedData = {};
+
+  try {
+    recognition.start();
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent = '⏹';
+    document.getElementById('voiceStatus').textContent = 'Escuchando... habla ahora';
+    document.getElementById('voiceStatus').classList.add('active');
+    document.getElementById('voiceZone').classList.add('listening');
+  } catch(e) {
+    showError('Error al iniciar el micrófono.');
+  }
+}
+
+function stopVoice() {
+  if (recognition && isRecording) {
+    try { recognition.stop(); } catch(e) {}
+  }
+  isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  document.getElementById('voiceStatus').textContent = voiceText ? '✓ Listo — toca "Interpretar"' : 'Toca el micrófono para dictar';
+  document.getElementById('voiceStatus').classList.remove('active');
+  document.getElementById('voiceZone').classList.remove('listening');
+}
+
+async function procesarTextoVoz() {
+  const texto = voiceText.trim() || document.getElementById('voiceTranscript').textContent.trim();
+  if (!texto) return;
+  document.getElementById('aiLoadingVoz').classList.add('visible');
+  document.getElementById('aiResultVoz').classList.remove('visible');
+  document.getElementById('btnInterpretarVoz').style.display = 'none';
+  try {
+    const result = await callClaudeTexto(texto);
+    extractedData = result;
+    renderAiRows('aiRowsVoz', result);
+    document.getElementById('aiResultVoz').classList.add('visible');
+  } catch(e) {
+    showError('Error al interpretar. Intenta de nuevo.');
+    document.getElementById('btnInterpretarVoz').style.display = 'block';
+  }
+  document.getElementById('aiLoadingVoz').classList.remove('visible');
+}
+
+async function callClaudeTexto(texto) {
+  const resp = await fetch('/api/extract-text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texto })
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  return await resp.json();
+}
+Si no puedes determinar algo, pon null.`
+      }]
+    })
+  });
+  if (!resp.ok) throw new Error('Error API');
+  const data = await resp.json();
+  const text = data.content[0].text.replace(/```json|```/g, '').trim();
+  return JSON.parse(text);
+}
+
+// ─────────────────────────────────────────────
+// RENDER IA RESULT
+// ─────────────────────────────────────────────
+function renderAiRows(containerId, data) {
+  const labels = {
+    monto: 'Monto', proveedor: 'Lugar/Proveedor',
+    concepto: 'Concepto', categoria: 'Categoría', fecha: 'Fecha'
+  };
+  document.getElementById(containerId).innerHTML = Object.entries(labels).map(([k, l]) => {
+    const v = data[k];
+    let display;
+    if (k === 'monto' && v != null) display = '$' + Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    else if (k === 'categoria' && v) display = (CAT_ICONS[v] || '') + ' ' + v;
+    else display = v || '—';
+    return `<div class="ai-row"><span class="ai-row-label">${l}</span><span class="ai-row-val">${display}</span></div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// REGISTRAR GASTO
+// ─────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 5000);
+}
+
+async function registrarGasto() {
+  let gasto = {};
+
+  if (currentCaptureTab === 'manual') {
+    const monto = parseFloat(document.getElementById('montoManual').value);
+    if (!monto || monto <= 0) { showError('Ingresa un monto válido.'); return; }
+    gasto = {
+      monto,
+      concepto: document.getElementById('conceptoManual').value.trim() || null,
+      proveedor: document.getElementById('proveedorManual').value.trim() || null,
+      categoria: document.getElementById('categoriaManual').value || 'Otros',
+      fecha: new Date().toISOString().split('T')[0]
+    };
+  } else {
+    if (!extractedData || !extractedData.monto) {
+      showError('Primero captura el gasto con foto o dictado y espera el resultado de IA.');
+      return;
+    }
+    gasto = extractedData;
+  }
+
+  const btn = document.getElementById('btnRegistrar');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="border-color:#ffffff55;border-top-color:#fff"></div> Guardando...';
+
+  const record = {
+    persona: NOMBRES[currentUser],
+    monto: Number(gasto.monto),
+    concepto: gasto.concepto || null,
+    proveedor: gasto.proveedor || null,
+    categoria: gasto.categoria || 'Otros',
+    fecha: gasto.fecha || new Date().toISOString().split('T')[0],
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/gastos_familia`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(record)
+    });
+
+    if (resp.ok || resp.status === 201) {
+      document.getElementById('statusFill').style.width = '100%';
+      mostrarExito(record);
+    } else {
+      const errText = await resp.text();
+      showError('Error al guardar: ' + errText);
+      btn.disabled = false;
+      btn.innerHTML = '✓ Registrar gasto';
+    }
+  } catch(e) {
+    showError('Error de conexión. Verifica el internet.');
+    btn.disabled = false;
+    btn.innerHTML = '✓ Registrar gasto';
+  }
+}
+
+function mostrarExito(record) {
+  document.getElementById('screenForm').classList.add('hidden');
+  document.getElementById('screenSuccess').classList.remove('hidden');
+  document.getElementById('successDetail').textContent = `${record.persona} · Efectivo · ${record.fecha}`;
+  document.getElementById('successCard').innerHTML = [
+    ['Categoría', (CAT_ICONS[record.categoria] || '') + ' ' + record.categoria],
+    ['Concepto', record.concepto || '—'],
+    ['Lugar', record.proveedor || '—'],
+    ['Monto', '$' + Number(record.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })],
+    ['Fecha', record.fecha]
+  ].map(([l, v]) => `<div class="success-card-row"><span class="success-card-label">${l}</span><span class="success-card-val">${v}</span></div>`).join('');
+}
+
+function nuevoGasto() {
+  document.getElementById('screenForm').classList.remove('hidden');
+  document.getElementById('screenSuccess').classList.add('hidden');
+  ['montoManual','conceptoManual','proveedorManual','categoriaManual'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('photoLabel').textContent = 'Toca para tomar foto o seleccionar imagen';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('aiResultFoto').classList.remove('visible');
+  document.getElementById('aiResultVoz').classList.remove('visible');
+  document.getElementById('voiceTranscript').classList.remove('visible');
+  document.getElementById('voiceTranscript').textContent = '';
+  document.getElementById('btnInterpretarVoz').style.display = 'none';
+  voiceText = '';
+  extractedData = {};
+  switchCaptureTab('foto');
+  document.getElementById('btnRegistrar').disabled = false;
+  document.getElementById('btnRegistrar').innerHTML = '✓ Registrar gasto';
+  document.getElementById('statusFill').style.width = '0%';
+}
+
+// ─────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function cambiarMes(delta) {
+  dashMes.month += delta;
+  if (dashMes.month > 12) { dashMes.month = 1; dashMes.year++; }
+  if (dashMes.month < 1) { dashMes.month = 12; dashMes.year--; }
+  cargarDashboard();
+}
+
+function setDashFilter(f) {
+  dashFilter = f;
+  document.querySelectorAll('.dash-filter-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['todos','u1','u2'][i] === f);
+  });
+  cargarDashboard();
+}
+
+async function cargarDashboard() {
+  const content = document.getElementById('dashContent');
+  content.innerHTML = '<div class="dash-loading">Cargando...</div>';
+
+  const mesLabel = MESES_ES[dashMes.month - 1] + ' ' + dashMes.year;
+  document.getElementById('dashMonth').textContent = mesLabel;
+
+  const fechaInicio = `${dashMes.year}-${String(dashMes.month).padStart(2,'0')}-01`;
+  const ultimoDia = new Date(dashMes.year, dashMes.month, 0).getDate();
+  const fechaFin = `${dashMes.year}-${String(dashMes.month).padStart(2,'0')}-${ultimoDia}`;
+
+  try {
+    let url = `${SUPABASE_URL}/rest/v1/gastos_familia?select=persona,monto,categoria,fecha&fecha=gte.${fechaInicio}&fecha=lte.${fechaFin}&order=fecha.desc`;
+    const resp = await fetch(url, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    let gastos = await resp.json();
+
+    // Filtrar por persona
+    if (dashFilter === 'u1') gastos = gastos.filter(g => g.persona === NOMBRES.u1);
+    if (dashFilter === 'u2') gastos = gastos.filter(g => g.persona === NOMBRES.u2);
+
+    if (!gastos.length) {
+      content.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p>Sin gastos en ${mesLabel}</p></div>`;
+      return;
+    }
+
+    const total = gastos.reduce((s, g) => s + Number(g.monto), 0);
+    const porCat = {};
+    gastos.forEach(g => {
+      const cat = g.categoria || 'Otros';
+      porCat[cat] = (porCat[cat] || 0) + Number(g.monto);
+    });
+    const catOrdenadas = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
+    const maxMonto = catOrdenadas[0][1];
+
+    const filtroLabel = dashFilter === 'todos' ? 'entre ambos' : (dashFilter === 'u1' ? NOMBRES.u1 : NOMBRES.u2);
+
+    let html = `
+      <div class="dash-total">
+        <div>
+          <div class="dash-total-label">Total efectivo · ${filtroLabel}</div>
+          <div class="dash-total-val">$${fmt(total)}</div>
+          <div class="dash-total-sub">${gastos.length} registro${gastos.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="dash-total-icon">💵</div>
+      </div>`;
+
+    catOrdenadas.forEach(([cat, monto]) => {
+      const pct = Math.round(monto / total * 100);
+      const barPct = Math.round(monto / maxMonto * 100);
+      html += `
+        <div class="cat-bar-item">
+          <div class="cat-bar-header">
+            <div class="cat-bar-name">${CAT_ICONS[cat] || '📦'} ${cat}</div>
+            <div class="cat-bar-monto">$${fmt(monto)}</div>
+          </div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${barPct}%"></div></div>
+          <div class="cat-bar-pct">${pct}% del total</div>
+        </div>`;
+    });
+
+    content.innerHTML = html;
+  } catch(e) {
+    content.innerHTML = '<div class="dash-loading">Error al cargar. Verifica conexión.</div>';
+    console.error(e);
+  }
+}
+
+// ─────────────────────────────────────────────
+// HISTORIAL
+// ─────────────────────────────────────────────
+function setHistFilter(f) {
+  histFilter = f;
+  document.querySelectorAll('.hist-filter-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['todos','u1','u2'][i] === f);
+  });
+  cargarHistorial();
+}
+
+async function cargarHistorial() {
+  const content = document.getElementById('histContent');
+  content.innerHTML = '<div class="hist-loading">Cargando...</div>';
+
+  try {
+    let url = `${SUPABASE_URL}/rest/v1/gastos_familia?select=*&order=created_at.desc&limit=80`;
+    const resp = await fetch(url, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    let gastos = await resp.json();
+
+    if (histFilter === 'u1') gastos = gastos.filter(g => g.persona === NOMBRES.u1);
+    if (histFilter === 'u2') gastos = gastos.filter(g => g.persona === NOMBRES.u2);
+
+    if (!gastos.length) {
+      content.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Sin registros aún</p></div>`;
+      return;
+    }
+
+    content.innerHTML = gastos.map(g => `
+      <div class="hist-item">
+        <div class="hist-cat-icon">${CAT_ICONS[g.categoria] || '📦'}</div>
+        <div class="hist-info">
+          <div class="hist-concepto">${g.concepto || g.categoria || 'Gasto'}</div>
+          <div class="hist-meta">${g.proveedor ? g.proveedor + ' · ' : ''}${g.fecha}</div>
+        </div>
+        <div class="hist-right">
+          <div class="hist-monto">$${fmt(g.monto)}</div>
+          <div class="hist-persona">${g.persona ? g.persona.split(' ')[0] : ''}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    content.innerHTML = '<div class="hist-loading">Error al cargar.</div>';
+    console.error(e);
+  }
+}
+
+// ─────────────────────────────────────────────
+// CONFIG (acceso largo toque en header)
+// ─────────────────────────────────────────────
+let headerPressTimer = null;
+document.addEventListener('DOMContentLoaded', () => {
+  const header = document.querySelector('.header-user');
+  if (header) {
+    header.addEventListener('touchstart', () => {
+      headerPressTimer = setTimeout(() => { abrirConfig(); }, 1200);
+    });
+    header.addEventListener('touchend', () => clearTimeout(headerPressTimer));
+    header.addEventListener('mousedown', () => {
+      headerPressTimer = setTimeout(() => { abrirConfig(); }, 1200);
+    });
+    header.addEventListener('mouseup', () => clearTimeout(headerPressTimer));
+  }
+});
+
+function abrirConfig() {
+  const cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
+  document.getElementById('configNombre1').value = cfg.u1 || '';
+  document.getElementById('configNombre2').value = cfg.u2 || '';
+  document.getElementById('configUrl').value = cfg.url || '';
+  document.getElementById('configKey').value = cfg.key || '';
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  ['tabCapturar','tabDashboard','tabHistorial'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('tabConfig').classList.remove('hidden');
+}
+
+function guardarConfig() {
+  const n1 = document.getElementById('configNombre1').value.trim();
+  const n2 = document.getElementById('configNombre2').value.trim();
+  const url = document.getElementById('configUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('configKey').value.trim();
+
+  if (!n1 || !n2 || !url || !key) return;
+  localStorage.setItem('familia_config', JSON.stringify({ u1: n1, u2: n2, url, key }));
+  NOMBRES.u1 = n1; NOMBRES.u2 = n2;
+  SUPABASE_URL = url; SUPABASE_KEY = key;
+
+  document.getElementById('dashFilterU1').textContent = n1;
+  document.getElementById('dashFilterU2').textContent = n2;
+  document.getElementById('histFilterU1').textContent = n1;
+  document.getElementById('histFilterU2').textContent = n2;
+
+  document.getElementById('configSaveMsg').classList.add('visible');
+  setTimeout(() => document.getElementById('configSaveMsg').classList.remove('visible'), 2500);
+}
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function fmt(n) {
+  return Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ─────────────────────────────────────────────
+// ARRANQUE
+// ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
