@@ -600,11 +600,25 @@ function showMainTab(tab) {
   const tabs = ['capturar', 'dashboard', 'historial'];
   const btns = document.querySelectorAll('.nav-btn');
   btns.forEach((b, i) => b.classList.toggle('active', tabs[i] === tab));
-  document.getElementById('tabCapturar').classList.toggle('hidden', tab !== 'capturar');
-  document.getElementById('tabDashboard').classList.toggle('hidden', tab !== 'dashboard');
-  document.getElementById('tabHistorial').classList.toggle('hidden', tab !== 'historial');
-  document.getElementById('tabConfig').classList.add('hidden');
-  document.getElementById('tabConfig').style.display = 'none';
+
+  // Ocultar todos primero
+  ['tabCapturar','tabDashboard','tabHistorial','tabConfig'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.add('hidden');
+    el.style.display = 'none';
+  });
+
+  // Mostrar solo el activo
+  const activeId = tab === 'capturar' ? 'tabCapturar' : tab === 'dashboard' ? 'tabDashboard' : 'tabHistorial';
+  const activeEl = document.getElementById(activeId);
+  activeEl.classList.remove('hidden');
+  activeEl.style.display = 'block';
+
+  // Actualizar labels de filtros con nombres actuales
+  const u1 = NOMBRES.u1 || 'Usuario 1';
+  const u2 = NOMBRES.u2 || 'Usuario 2';
+  ['dashFilterU1','histFilterU1'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = u1; });
+  ['dashFilterU2','histFilterU2'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = u2; });
 
   if (tab === 'dashboard') cargarDashboard();
   if (tab === 'historial') cargarHistorial();
