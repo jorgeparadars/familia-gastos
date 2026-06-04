@@ -301,19 +301,11 @@ textarea { resize: none; height: 85px; line-height: 1.5; }
 
           <!-- PANEL FOTO -->
           <div class="capture-panel active" id="panelFoto">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-              <div class="photo-zone" style="min-height:90px;position:relative;">
-                <span style="font-size:28px">📷</span>
-                <p style="font-size:12px;margin-top:4px">Tomar foto</p>
-                <input type="file" accept="image/*" capture="environment" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handlePhoto(this)">
-              </div>
-              <div class="photo-zone" style="min-height:90px;position:relative;">
-                <span style="font-size:28px">🖼️</span>
-                <p style="font-size:12px;margin-top:4px">Del carrete</p>
-                <input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handlePhoto(this)">
-              </div>
+            <div class="photo-zone" id="photoZone">
+              <span class="photo-zone-icon">📸</span>
+              <p id="photoLabel">Toca para abrir cámara o elegir del carrete</p>
+              <input type="file" accept="image/*" id="fileInput" onchange="handlePhoto(this)">
             </div>
-            <p id="photoLabel" style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;"></p>
             <img id="photoPreview" class="photo-preview">
             <div class="ai-loading" id="aiLoadingFoto">
               <div class="spinner"></div>
