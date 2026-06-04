@@ -486,7 +486,11 @@ const CAT_ICONS = {
 function init() {
   const cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
   if (!cfg.u1 || !cfg.u2 || !cfg.url || !cfg.key) {
-    document.getElementById('setupScreen').classList.remove('hidden');
+    // Sin config: mostrar la app en modo Config directamente
+    document.getElementById('setupScreen').classList.add('hidden');
+    document.getElementById('userSelectScreen').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    abrirConfig();
     return;
   }
   NOMBRES.u1 = cfg.u1;
@@ -1076,14 +1080,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function abrirConfig() {
   const cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
-  document.getElementById('configNombre1').value = cfg.u1 || '';
-  document.getElementById('configNombre2').value = cfg.u2 || '';
-  document.getElementById('configUrl').value = cfg.url || '';
-  document.getElementById('configKey').value = cfg.key || '';
+  document.getElementById('configNombre1').value = cfg.u1 || NOMBRES.u1 || '';
+  document.getElementById('configNombre2').value = cfg.u2 || NOMBRES.u2 || '';
+  document.getElementById('configUrl').value = cfg.url || SUPABASE_URL || '';
+  document.getElementById('configKey').value = cfg.key || SUPABASE_KEY || '';
 
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   ['tabCapturar','tabDashboard','tabHistorial'].forEach(id => {
-    document.getElementById(id).classList.add('hidden');
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
   });
   document.getElementById('tabConfig').classList.remove('hidden');
 }
@@ -1095,17 +1100,28 @@ function guardarConfig() {
   const key = document.getElementById('configKey').value.trim();
 
   if (!n1 || !n2 || !url || !key) return;
+
+  const esPrimerUso = !NOMBRES.u1; // si aún no hay config en memoria
+
   localStorage.setItem('familia_config', JSON.stringify({ u1: n1, u2: n2, url, key }));
   NOMBRES.u1 = n1; NOMBRES.u2 = n2;
   SUPABASE_URL = url; SUPABASE_KEY = key;
 
-  document.getElementById('dashFilterU1').textContent = n1;
-  document.getElementById('dashFilterU2').textContent = n2;
-  document.getElementById('histFilterU1').textContent = n1;
-  document.getElementById('histFilterU2').textContent = n2;
+  // Actualizar labels de filtros (pueden no existir si es primer uso, sin crash)
+  ['dashFilterU1','dashFilterU2','histFilterU1','histFilterU2'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = i % 2 === 0 ? n1 : n2;
+  });
 
-  document.getElementById('configSaveMsg').classList.add('visible');
-  setTimeout(() => document.getElementById('configSaveMsg').classList.remove('visible'), 2500);
+  if (esPrimerUso) {
+    // Primer uso: ir directo a selección de usuario
+    document.getElementById('tabConfig').classList.add('hidden');
+    mostrarSeleccionUsuario();
+  } else {
+    // Cambio de config en uso normal: confirmar y quedarse
+    document.getElementById('configSaveMsg').classList.add('visible');
+    setTimeout(() => document.getElementById('configSaveMsg').classList.remove('visible'), 2500);
+  }
 }
 
 // ─────────────────────────────────────────────
