@@ -70,6 +70,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 .screen { padding: 1.25rem; }
 .screen.hidden { display: none; }
+#tabConfig { display: none; }
+#tabConfig.visible { display: block; }
 
 /* ── CAMPOS ── */
 .label { font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
@@ -602,6 +604,7 @@ function showMainTab(tab) {
   document.getElementById('tabDashboard').classList.toggle('hidden', tab !== 'dashboard');
   document.getElementById('tabHistorial').classList.toggle('hidden', tab !== 'historial');
   document.getElementById('tabConfig').classList.add('hidden');
+  document.getElementById('tabConfig').style.display = 'none';
 
   if (tab === 'dashboard') cargarDashboard();
   if (tab === 'historial') cargarHistorial();
@@ -1082,6 +1085,7 @@ function abrirConfig() {
     if (el) el.classList.add('hidden');
   });
   document.getElementById('tabConfig').classList.remove('hidden');
+  document.getElementById('tabConfig').style.display = 'block';
 }
 
 function guardarConfig() {
@@ -1107,6 +1111,7 @@ function guardarConfig() {
   if (esPrimerUso) {
     // Primer uso: ir directo a selección de usuario
     document.getElementById('tabConfig').classList.add('hidden');
+    document.getElementById('tabConfig').style.display = 'none';
     mostrarSeleccionUsuario();
   } else {
     // Cambio de config en uso normal: confirmar y quedarse
