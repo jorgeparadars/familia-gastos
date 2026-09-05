@@ -182,6 +182,10 @@ textarea { resize: none; height: 85px; line-height: 1.5; }
 .cat-bar-detail { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
 .cat-bar-item.open .cat-bar-detail { max-height: 1000px; }
 .cat-bar-detail-inner { padding: 8px 0 4px; }
+.saldo-efectivo-card { display: flex; gap: 10px; margin-bottom: 12px; }
+.saldo-efectivo-item { flex: 1; background: var(--bg-secondary, #f5f5f5); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; }
+.saldo-efectivo-nombre { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.saldo-efectivo-monto { font-size: 18px; font-weight: 700; margin-top: 2px; }
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
 .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-state p { font-size: 14px; }
@@ -359,7 +363,10 @@ textarea { resize: none; height: 85px; line-height: 1.5; }
               <select id="categoriaManual">
                 <option value="">Selecciona...</option>
                 <option value="Casa">🏠 Casa</option>
-                <option value="Comida">🛒 Comida</option>
+                <option value="Comida Casa">🛒 Comida Casa</option>
+                <option value="Comida Postre">🍰 Comida Postre</option>
+                <option value="Comida Chatarra">🍟 Comida Chatarra</option>
+                <option value="Comida Fuera">🍽️ Comida Fuera</option>
                 <option value="Salud">💊 Salud</option>
                 <option value="Educación">📚 Educación</option>
                 <option value="Vehículos">🚗 Vehículos</option>
@@ -371,7 +378,6 @@ textarea { resize: none; height: 85px; line-height: 1.5; }
                 <option value="Servicios">💡 Servicios</option>
                 <option value="Donaciones">❤️ Donaciones</option>
                 <option value="Alcohol">🍷 Alcohol</option>
-                <option value="Takeout">🥡 Takeout</option>
               </select>
             </div>
             <div class="field-group">
@@ -494,24 +500,33 @@ let dashFilter = 'todos';
 let histFilter = 'todos';
 
 const CAT_ICONS = {
-  'Casa':'🏠','Comida':'🛒','Salud':'💊','Educación':'📚',
+  'Casa':'🏠','Comida Casa':'🛒','Comida Postre':'🍰','Comida Chatarra':'🍟',
+  'Comida Fuera':'🍽️','Salud':'💊','Educación':'📚',
   'Vehículos':'🚗','Gasolina':'⛽','Country':'⛳','Entretenimiento':'🎬',
   'Ropa':'👕','Viajes':'✈️','Servicios':'💡','Donaciones':'❤️',
-  'Alcohol':'🍷','Takeout':'🥡','Otros':'📦'
+  'Alcohol':'🍷','Otros':'📦'
 };
 
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
+// Valores por defecto: la anon/publishable key está diseñada para exponerse
+// del lado del cliente (la seguridad real vive en las políticas de Supabase),
+// así que no hay riesgo en dejarla aquí. Esto evita tener que capturar
+// usuario/URL/key en cada dispositivo nuevo.
+const DEFAULT_CONFIG = {
+  u1: 'Jorge',
+  u2: 'Beatriz Castelo',
+  url: 'https://jduroyiluikxzdvpgyss.supabase.co',
+  key: 'sb_publishable_3FJZ_UaHpNi-qT1ElcXGGg_glbnhsPi'
+};
+
 function init() {
-  const cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
+  let cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
   if (!cfg.u1 || !cfg.u2 || !cfg.url || !cfg.key) {
-    // Sin config: mostrar la app en modo Config directamente
-    document.getElementById('setupScreen').classList.add('hidden');
-    document.getElementById('userSelectScreen').classList.add('hidden');
-    document.getElementById('mainApp').classList.remove('hidden');
-    abrirConfig();
-    return;
+    // Sin config guardada: usar los valores por defecto automáticamente
+    cfg = DEFAULT_CONFIG;
+    localStorage.setItem('familia_config', JSON.stringify(cfg));
   }
   NOMBRES.u1 = cfg.u1;
   NOMBRES.u2 = cfg.u2;
@@ -1019,17 +1034,30 @@ async function cargarDashboard() {
 
   try {
     let url = `${SUPABASE_URL}/rest/v1/gastos_familia?select=persona,monto,concepto,proveedor,categoria,fecha&fecha=gte.${fechaInicio}&fecha=lte.${fechaFin}&order=fecha.desc`;
-    const resp = await fetch(url, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
+    const [resp, saldoResp] = await Promise.all([
+      fetch(url, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }),
+      fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?select=persona,saldo`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } })
+    ]);
     let gastos = await resp.json();
+    const saldos = await saldoResp.json();
+    const saldoU1 = Number((saldos.find(s => s.persona === NOMBRES.u1) || {}).saldo || 0);
+    const saldoU2 = Number((saldos.find(s => s.persona === NOMBRES.u2) || {}).saldo || 0);
+
+    let saldoHtml = '<div class="saldo-efectivo-card">';
+    if (dashFilter !== 'u2') {
+      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u1}</span><span class="saldo-efectivo-monto">$${fmt(saldoU1)}</span></div>`;
+    }
+    if (dashFilter !== 'u1') {
+      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u2}</span><span class="saldo-efectivo-monto">$${fmt(saldoU2)}</span></div>`;
+    }
+    saldoHtml += '</div>';
 
     // Filtrar por persona
     if (dashFilter === 'u1') gastos = gastos.filter(g => g.persona === NOMBRES.u1);
     if (dashFilter === 'u2') gastos = gastos.filter(g => g.persona === NOMBRES.u2);
 
     if (!gastos.length) {
-      content.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p>Sin gastos en ${mesLabel}</p></div>`;
+      content.innerHTML = saldoHtml + `<div class="empty-state"><div class="empty-state-icon">📭</div><p>Sin gastos en ${mesLabel}</p></div>`;
       return;
     }
 
@@ -1051,7 +1079,7 @@ async function cargarDashboard() {
 
     const filtroLabel = dashFilter === 'todos' ? 'entre ambos' : (dashFilter === 'u1' ? NOMBRES.u1 : NOMBRES.u2);
 
-    let html = `
+    let html = saldoHtml + `
       <div class="dash-total">
         <div>
           <div class="dash-total-label">Total efectivo · ${filtroLabel}</div>
