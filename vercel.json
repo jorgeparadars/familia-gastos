@@ -1,8 +1,4 @@
 {
-  "functions": {
-    "api/extract.js": { "runtime": "nodejs20.x" },
-    "api/extract-text.js": { "runtime": "nodejs20.x" }
-  },
   "headers": [
     {
       "source": "/(.*)",
