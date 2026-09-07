@@ -188,6 +188,17 @@ textarea { resize: none; height: 85px; line-height: 1.5; }
 .cat-bar-item.open .cat-bar-detail { max-height: 1000px; }
 .cat-bar-detail-inner { padding: 8px 0 4px; }
 .saldo-efectivo-card { display: flex; gap: 10px; margin-bottom: 12px; }
+.saldo-efectivo-item { position: relative; }
+.btn-add-efectivo { position: absolute; top: 8px; right: 8px; background: var(--primary, #0ea5e9); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; line-height: 22px; text-align: center; cursor: pointer; padding: 0; }
+.efectivo-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; justify-content: center; align-items: center; }
+.efectivo-modal-overlay.visible { display: flex; }
+.efectivo-modal { background: var(--bg-primary, #fff); border-radius: 16px; padding: 24px; width: 280px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+.efectivo-modal h3 { margin: 0 0 16px; font-size: 16px; }
+.efectivo-modal input { width: 100%; box-sizing: border-box; border: 1px solid var(--border, #ddd); border-radius: 8px; padding: 10px 12px; font-size: 16px; margin-bottom: 12px; }
+.efectivo-modal-btns { display: flex; gap: 8px; }
+.efectivo-modal-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-confirmar-efectivo { background: var(--primary, #0ea5e9); color: #fff; }
+.btn-cancelar-efectivo { background: var(--bg-secondary, #f0f0f0); color: var(--text-primary, #111); }
 .saldo-efectivo-item { flex: 1; background: var(--bg-secondary, #f5f5f5); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; }
 .saldo-efectivo-nombre { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
 .saldo-efectivo-monto { font-size: 18px; font-weight: 700; margin-top: 2px; }
@@ -1165,10 +1176,10 @@ async function cargarDashboard() {
 
     let saldoHtml = '<div class="saldo-efectivo-card">';
     if (dashFilter !== 'u2') {
-      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u1}</span><span class="saldo-efectivo-monto">$${fmt(saldoU1)}</span></div>`;
+      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u1}</span><span class="saldo-efectivo-monto">$${fmt(saldoU1)}</span><button class="btn-add-efectivo" onclick="abrirModalEfectivo('${NOMBRES.u1}')" title="Agregar efectivo">+</button></div>`;
     }
     if (dashFilter !== 'u1') {
-      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u2}</span><span class="saldo-efectivo-monto">$${fmt(saldoU2)}</span></div>`;
+      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u2}</span><span class="saldo-efectivo-monto">$${fmt(saldoU2)}</span><button class="btn-add-efectivo" onclick="abrirModalEfectivo('${NOMBRES.u2}')" title="Agregar efectivo">+</button></div>`;
     }
     saldoHtml += '</div>';
 
@@ -1370,6 +1381,61 @@ function fmt(n) {
 // ARRANQUE
 // ─────────────────────────────────────────────
 init();
+// ─── MODAL INGRESO EFECTIVO ───
+let efectivoPersona = null;
+
+function abrirModalEfectivo(persona) {
+  efectivoPersona = persona;
+  document.getElementById('efectivoModalTitulo').textContent = `Agregar efectivo · ${persona.split(' ')[0]}`;
+  document.getElementById('efectivoMontoInput').value = '';
+  document.getElementById('efectivoModalOverlay').classList.add('visible');
+  setTimeout(() => document.getElementById('efectivoMontoInput').focus(), 100);
+}
+
+function cerrarModalEfectivo() {
+  document.getElementById('efectivoModalOverlay').classList.remove('visible');
+  efectivoPersona = null;
+}
+
+async function confirmarEfectivo() {
+  const monto = parseFloat(document.getElementById('efectivoMontoInput').value);
+  if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
+  try {
+    const saldoResp = await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(efectivoPersona)}&select=saldo`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const saldoData = await saldoResp.json();
+    const actual = saldoData && saldoData[0] ? Number(saldoData[0].saldo) : 0;
+    const nuevo = actual + monto;
+    await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(efectivoPersona)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ saldo: nuevo })
+    });
+    cerrarModalEfectivo();
+    loadDash(); // refrescar el dashboard
+  } catch(e) {
+    alert('Error al actualizar saldo: ' + e.message);
+  }
+}
+
 </script>
+  <!-- Modal ingreso efectivo -->
+  <div class="efectivo-modal-overlay" id="efectivoModalOverlay">
+    <div class="efectivo-modal">
+      <h3 id="efectivoModalTitulo">Agregar efectivo</h3>
+      <input type="number" id="efectivoMontoInput" placeholder="Monto ($)" step="0.01" min="0">
+      <div class="efectivo-modal-btns">
+        <button class="btn-cancelar-efectivo" onclick="cerrarModalEfectivo()">Cancelar</button>
+        <button class="btn-confirmar-efectivo" onclick="confirmarEfectivo()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
