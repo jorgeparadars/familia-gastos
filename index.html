@@ -405,6 +405,21 @@ textarea { resize: none; height: 85px; line-height: 1.5; }
           </div>
         </div>
 
+        <div class="field-group" style="margin-top:1rem;">
+          <div class="label">Forma de pago</div>
+          <select id="formaPago">
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="Débito Banorte">💳 Débito Banorte</option>
+            <option value="Débito Banorte Bea">💳 Débito Banorte Bea</option>
+            <option value="TDC Jorge INVEX">💳 TDC Jorge INVEX</option>
+            <option value="TDC Bea">💳 TDC Bea</option>
+            <option value="TDC Santander">💳 TDC Santander</option>
+            <option value="TDC Banamex">💳 TDC Banamex</option>
+            <option value="Transferencia">🏦 Transferencia</option>
+            <option value="Otro">🔹 Otro</option>
+          </select>
+        </div>
+
         <div class="error-msg" id="errorMsg"></div>
         <button class="btn-primary" id="btnRegistrar" onclick="registrarGasto()">✓ Registrar gasto</button>
       </div>
@@ -708,6 +723,8 @@ function toBase64(file) {
   });
 }
 
+let extractedGastos = [];
+
 async function handlePhoto(input) {
   if (!input.files[0]) return;
   const file = input.files[0];
@@ -720,14 +737,61 @@ async function handlePhoto(input) {
   try {
     const base64 = await toBase64(file);
     const result = await callClaudeImagen(base64);
-    extractedData = result;
-    renderAiRows('aiRowsFoto', result);
+    if (result && Array.isArray(result.gastos)) {
+      extractedGastos = result.gastos.map(g => ({
+        monto: g.monto, concepto: g.concepto,
+        categoria: g.categoria || 'Casa',
+        proveedor: result.proveedor || null,
+        fecha: result.fecha || null
+      }));
+    } else if (result && result.monto != null) {
+      extractedGastos = [{
+        monto: result.monto, concepto: result.concepto,
+        categoria: result.categoria || 'Casa',
+        proveedor: result.proveedor || null, fecha: result.fecha || null
+      }];
+    } else {
+      extractedGastos = [];
+    }
+    renderAiRowsFoto(extractedGastos);
     document.getElementById('aiResultFoto').classList.add('visible');
   } catch(e) {
     showError('No se pudo leer el ticket. Intenta de nuevo o usa captura manual.');
     console.error(e);
   }
   document.getElementById('aiLoadingFoto').classList.remove('visible');
+}
+
+function renderAiRowsFoto(gastos) {
+  const cont = document.getElementById('aiRowsFoto');
+  if (!gastos.length) {
+    cont.innerHTML = '<div class="ai-row"><span class="ai-row-val">No se detectaron gastos. Usa captura manual.</span></div>';
+    return;
+  }
+  const catOptions = Object.keys(CAT_ICONS).filter(c => c !== 'Otros')
+    .map(c => `<option value="${c}">${CAT_ICONS[c] || ''} ${c}</option>`).join('');
+  cont.innerHTML = gastos.map((g, i) => `
+    <div class="ai-row" style="flex-direction:column;align-items:stretch;gap:6px;border-bottom:1px solid var(--border,#eee);padding-bottom:10px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <input type="text" value="${(g.concepto || '').replace(/"/g,'&quot;')}" oninput="extractedGastos[${i}].concepto=this.value"
+          style="flex:1;border:none;background:transparent;font-weight:600;font-size:14px;color:var(--text-primary,#111);">
+        <button onclick="quitarGastoDesglosado(${i})" style="border:none;background:transparent;color:#c33;font-size:16px;padding:0 4px;">✕</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:13px;color:var(--text-secondary);">$</span>
+        <input type="number" step="0.01" min="0" value="${g.monto ?? ''}" oninput="extractedGastos[${i}].monto=parseFloat(this.value)||0"
+          style="width:90px;border:1px solid var(--border,#ddd);border-radius:6px;padding:4px 6px;font-size:14px;">
+        <select onchange="extractedGastos[${i}].categoria=this.value" style="flex:1;border:1px solid var(--border,#ddd);border-radius:6px;padding:4px 6px;font-size:14px;">
+          ${catOptions.replace(`value="${g.categoria}"`, `value="${g.categoria}" selected`)}
+        </select>
+      </div>
+    </div>
+  `).join('') + `<div class="ai-row" style="font-weight:600;"><span class="ai-row-label">Total</span><span class="ai-row-val">$${gastos.reduce((s,g)=>s+(Number(g.monto)||0),0).toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>`;
+}
+
+function quitarGastoDesglosado(i) {
+  extractedGastos.splice(i, 1);
+  renderAiRowsFoto(extractedGastos);
 }
 
 async function callClaudeImagen(base64) {
@@ -905,39 +969,49 @@ function showError(msg) {
 }
 
 async function registrarGasto() {
-  let gasto = {};
+  let gastosAGuardar = [];
 
   if (currentCaptureTab === 'manual') {
     const monto = parseFloat(document.getElementById('montoManual').value);
     if (!monto || monto <= 0) { showError('Ingresa un monto válido.'); return; }
-    gasto = {
+    gastosAGuardar = [{
       monto,
       concepto: document.getElementById('conceptoManual').value.trim() || null,
       proveedor: document.getElementById('proveedorManual').value.trim() || null,
       categoria: document.getElementById('categoriaManual').value || 'Otros',
       fecha: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
-    };
-  } else {
-    if (!extractedData || !extractedData.monto) {
-      showError('Primero captura el gasto con foto o dictado y espera el resultado de IA.');
+    }];
+  } else if (currentCaptureTab === 'foto') {
+    if (!extractedGastos || !extractedGastos.length) {
+      showError('Primero captura el ticket con foto y espera el resultado de IA.');
       return;
     }
-    gasto = extractedData;
+    gastosAGuardar = extractedGastos.filter(g => g.monto > 0);
+    if (!gastosAGuardar.length) { showError('No hay gastos válidos para guardar.'); return; }
+  } else {
+    if (!extractedData || !extractedData.monto) {
+      showError('Primero captura el gasto con dictado y espera el resultado de IA.');
+      return;
+    }
+    gastosAGuardar = [extractedData];
   }
 
+  const formaPago = document.getElementById('formaPago').value;
   const btn = document.getElementById('btnRegistrar');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="border-color:#ffffff55;border-top-color:#fff"></div> Guardando...';
 
-  const record = {
+  const fechaDefault = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const records = gastosAGuardar.map(gasto => ({
     persona: NOMBRES[currentUser],
     monto: Number(gasto.monto),
     concepto: gasto.concepto || null,
     proveedor: gasto.proveedor || null,
     categoria: gasto.categoria || 'Otros',
-    fecha: gasto.fecha || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
+    forma_pago: formaPago,
+    fecha: gasto.fecha || fechaDefault,
     created_at: new Date().toISOString()
-  };
+  }));
 
   try {
     const resp = await fetch(`${SUPABASE_URL}/rest/v1/gastos_familia`, {
@@ -948,12 +1022,36 @@ async function registrarGasto() {
         'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Prefer': 'return=minimal'
       },
-      body: JSON.stringify(record)
+      body: JSON.stringify(records)
     });
 
     if (resp.ok || resp.status === 201) {
+      if (formaPago === 'efectivo') {
+        try {
+          const totalMonto = records.reduce((s, r) => s + r.monto, 0);
+          const saldoResp = await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(records[0].persona)}&select=saldo`, {
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+          });
+          const saldoData = await saldoResp.json();
+          if (saldoData && saldoData[0]) {
+            const nuevoSaldo = Number(saldoData[0].saldo) - totalMonto;
+            await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(records[0].persona)}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({ saldo: nuevoSaldo })
+            });
+          }
+        } catch(saldoErr) {
+          console.error('Error actualizando saldo:', saldoErr);
+        }
+      }
       document.getElementById('statusFill').style.width = '100%';
-      mostrarExito(record);
+      mostrarExito(records);
     } else {
       const errText = await resp.text();
       showError('Error al guardar: ' + errText);
@@ -967,17 +1065,28 @@ async function registrarGasto() {
   }
 }
 
-function mostrarExito(record) {
+function mostrarExito(records) {
+  const list = Array.isArray(records) ? records : [records];
+  const first = list[0];
+  const formaPagoLabel = first.forma_pago === 'efectivo' ? 'Efectivo' : (first.forma_pago || '—');
   document.getElementById('screenForm').classList.add('hidden');
   document.getElementById('screenSuccess').classList.remove('hidden');
-  document.getElementById('successDetail').textContent = `${record.persona} · Efectivo · ${record.fecha}`;
-  document.getElementById('successCard').innerHTML = [
-    ['Categoría', (CAT_ICONS[record.categoria] || '') + ' ' + record.categoria],
-    ['Concepto', record.concepto || '—'],
-    ['Lugar', record.proveedor || '—'],
-    ['Monto', '$' + Number(record.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })],
-    ['Fecha', record.fecha]
-  ].map(([l, v]) => `<div class="success-card-row"><span class="success-card-label">${l}</span><span class="success-card-val">${v}</span></div>`).join('');
+  if (list.length === 1) {
+    document.getElementById('successDetail').textContent = `${first.persona} · ${formaPagoLabel} · ${first.fecha}`;
+    document.getElementById('successCard').innerHTML = [
+      ['Categoría', (CAT_ICONS[first.categoria] || '') + ' ' + first.categoria],
+      ['Concepto', first.concepto || '—'],
+      ['Lugar', first.proveedor || '—'],
+      ['Monto', '$' + Number(first.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })],
+      ['Fecha', first.fecha]
+    ].map(([l, v]) => `<div class="success-card-row"><span class="success-card-label">${l}</span><span class="success-card-val">${v}</span></div>`).join('');
+  } else {
+    const total = list.reduce((s, r) => s + Number(r.monto), 0);
+    document.getElementById('successDetail').textContent = `${first.persona} · ${formaPagoLabel} · ${first.fecha} · ${list.length} categorías`;
+    document.getElementById('successCard').innerHTML = list.map(r =>
+      `<div class="success-card-row"><span class="success-card-label">${CAT_ICONS[r.categoria] || ''} ${r.categoria}</span><span class="success-card-val">$${Number(r.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>`
+    ).join('') + `<div class="success-card-row" style="font-weight:700;border-top:1px solid var(--border,#eee);margin-top:6px;padding-top:6px;"><span class="success-card-label">Total</span><span class="success-card-val">$${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>`;
+  }
 }
 
 function nuevoGasto() {
@@ -996,6 +1105,7 @@ function nuevoGasto() {
   document.getElementById('btnInterpretarVoz').style.display = 'none';
   voiceText = '';
   extractedData = {};
+  extractedGastos = [];
   switchCaptureTab('foto');
   document.getElementById('btnRegistrar').disabled = false;
   document.getElementById('btnRegistrar').innerHTML = '✓ Registrar gasto';
