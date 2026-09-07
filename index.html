@@ -915,7 +915,7 @@ async function registrarGasto() {
       concepto: document.getElementById('conceptoManual').value.trim() || null,
       proveedor: document.getElementById('proveedorManual').value.trim() || null,
       categoria: document.getElementById('categoriaManual').value || 'Otros',
-      fecha: new Date().toISOString().split('T')[0]
+      fecha: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     };
   } else {
     if (!extractedData || !extractedData.monto) {
@@ -935,7 +935,7 @@ async function registrarGasto() {
     concepto: gasto.concepto || null,
     proveedor: gasto.proveedor || null,
     categoria: gasto.categoria || 'Otros',
-    fecha: gasto.fecha || new Date().toISOString().split('T')[0],
+    fecha: gasto.fecha || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     created_at: new Date().toISOString()
   };
 
