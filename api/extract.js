@@ -11,7 +11,7 @@ export default async function handler(req) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 400,
         system: `Extrae datos de un ticket de compra mexicano. Responde SOLO JSON sin markdown ni backticks. Campos: monto (número, solo el total), proveedor (string), concepto (string), categoria (una de: Casa, Comida, Salud, Educación, Vehículos, Gasolina, Country, Entretenimiento, Ropa, Viajes, Servicios, Donaciones, Alcohol, Takeout), fecha (YYYY-MM-DD, usa ${today} si no aparece). Usa null si no encuentras el campo.`,
         messages: [{ role: 'user', content: [
