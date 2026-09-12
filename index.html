@@ -419,11 +419,16 @@ textarea { resize: none; height: 85px; line-height: 1.5; }
         </div>
 
         <div class="field-group" style="margin-top:1rem;">
+          <div class="label">Fecha del gasto</div>
+          <input type="date" id="fechaGasto" style="width:100%;box-sizing:border-box;border:1px solid var(--border,#ddd);border-radius:8px;padding:10px 12px;font-size:16px;background:var(--bg-primary,#fff);color:var(--text-primary,#111);">
+        </div>
+
+        <div class="field-group" style="margin-top:1rem;">
           <div class="label">Forma de pago</div>
           <select id="formaPago">
             <option value="efectivo">💵 Efectivo</option>
             <option value="Débito Banorte">💳 Débito Banorte</option>
-            <option value="Débito Banorte Bea">💳 Débito Banorte Bea</option>
+            <option value="Débito Banamex Bea">💳 Débito Banamex Bea</option>
             <option value="TDC Jorge INVEX">💳 TDC Jorge INVEX</option>
             <option value="TDC Bea">💳 TDC Bea</option>
             <option value="TDC Santander">💳 TDC Santander</option>
@@ -992,7 +997,7 @@ async function registrarGasto() {
       concepto: document.getElementById('conceptoManual').value.trim() || null,
       proveedor: document.getElementById('proveedorManual').value.trim() || null,
       categoria: document.getElementById('categoriaManual').value || 'Otros',
-      fecha: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
+      fecha: document.getElementById('fechaGasto').value || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     }];
   } else if (currentCaptureTab === 'foto') {
     if (!extractedGastos || !extractedGastos.length) {
@@ -1014,7 +1019,7 @@ async function registrarGasto() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="border-color:#ffffff55;border-top-color:#fff"></div> Guardando...';
 
-  const fechaDefault = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const fechaDefault = document.getElementById('fechaGasto').value || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const records = gastosAGuardar.map(gasto => ({
     persona: NOMBRES[currentUser],
     monto: Number(gasto.monto),
@@ -1119,6 +1124,7 @@ function nuevoGasto() {
   voiceText = '';
   extractedData = {};
   extractedGastos = [];
+  document.getElementById('fechaGasto').value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   switchCaptureTab('foto');
   document.getElementById('btnRegistrar').disabled = false;
   document.getElementById('btnRegistrar').innerHTML = '✓ Registrar gasto';
@@ -1311,6 +1317,7 @@ async function cargarHistorial() {
 // ─────────────────────────────────────────────
 let headerPressTimer = null;
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('fechaGasto').value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const header = document.querySelector('.header-user');
   if (header) {
     header.addEventListener('touchstart', () => {
