@@ -2,1449 +2,691 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Familia Gastos">
-<meta name="theme-color" content="#1A7F6E">
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<title>Familia Gastos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>PRS · Movimientos</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E7EFE3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; }
-:root {
-  --teal: #1A7F6E;
-  --teal-light: #E8F5F2;
-  --teal-dark: #125C50;
-  --border: #e0e0e0;
-  --text: #1a1a1a;
-  --text-secondary: #666;
-  --bg: #fff;
-  --bg-secondary: #f8f8f8;
-  --red: #c0392b;
-  --red-light: #fff5f5;
-}
-.app { max-width: 420px; margin: 0 auto; background: var(--bg); min-height: 100vh; position: relative; }
+  :root{
+    --paper: #E7EFE3;
+    --paper-deep: #DCE7D6;
+    --rule: #A9C4A0;
+    --margin: #B23A2E;
+    --ink: #1E2A1E;
+    --ink-dim: #4B5A47;
+    --cargo: #8B2E22;
+    --abono: #1F4D2E;
+    --neutral: #55606B;
+    --band: #2C4A3B;
+    --band-ink: #E7EFE3;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    min-height:100vh;
+    padding-left:28px;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    top:0; bottom:0; left:28px;
+    width:2px;
+    background:var(--margin);
+    opacity:.55;
+    z-index:1;
+  }
+  body::after{
+    content:"";
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0px, transparent 30px,
+      var(--rule) 30px, var(--rule) 31px
+    );
+    opacity:.35;
+    pointer-events:none;
+    z-index:0;
+  }
+  .wrap{position:relative; z-index:2; max-width:1080px; margin:0 auto; padding:0 20px 80px 24px;}
 
-/* ── PANTALLA SETUP (primer uso) ── */
-.setup-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; }
-.setup-screen.hidden { display: none; }
-.setup-logo { width: 72px; height: 72px; border-radius: 20px; background: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 1.5rem; }
-.setup-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; text-align: center; }
-.setup-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; text-align: center; line-height: 1.5; }
-.setup-form { width: 100%; display: flex; flex-direction: column; gap: 14px; }
-.setup-field label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 5px; }
-.setup-field input { width: 100%; padding: 13px 14px; font-size: 16px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-family: inherit; outline: none; }
-.setup-field input:focus { border-color: var(--teal); }
-.setup-hint { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+  .masthead{
+    padding:28px 0 18px;
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .masthead h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0;
+    letter-spacing:.2px;
+  }
+  .masthead .sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--ink-dim);
+  }
 
-/* ── PANTALLA SELECCIÓN USUARIO ── */
-.user-select-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; }
-.user-select-screen.hidden { display: none; }
-.user-select-logo { width: 64px; height: 64px; border-radius: 16px; background: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 1.5rem; }
-.user-select-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.user-select-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; }
-.user-list { width: 100%; display: flex; flex-direction: column; gap: 12px; }
-.user-card { width: 100%; padding: 18px; border-radius: 16px; border: 1.5px solid var(--border); background: var(--bg); cursor: pointer; text-align: left; transition: all 0.15s; font-family: inherit; display: flex; align-items: center; gap: 14px; }
-.user-card:active { transform: scale(0.98); }
-.user-card.primary { border-color: var(--teal); background: var(--teal-light); }
-.user-avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #e8e8e8; flex-shrink: 0; }
-.user-card.primary .user-avatar { background: var(--teal); color: #fff; }
-.user-name { font-size: 16px; font-weight: 600; color: var(--text); }
-.user-role { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  #login-screen{
+    max-width:360px; margin:80px auto; padding:0 20px;
+    font-family:'Inter',sans-serif;
+  }
+  #login-screen h2{font-family:'Source Serif 4',serif; font-size:22px; margin-bottom:4px;}
+  #login-screen p{color:var(--ink-dim); font-size:13.5px; margin-top:0;}
+  #login-screen input{
+    width:100%; padding:10px 12px; margin-bottom:10px;
+    border:1px solid var(--rule); background:#fff; border-radius:3px;
+    font-family:'IBM Plex Mono', monospace; font-size:14px;
+  }
+  #login-screen button{
+    width:100%; padding:11px; background:var(--band); color:var(--band-ink);
+    border:none; border-radius:3px; font-family:'Inter',sans-serif; font-weight:600;
+    font-size:14px; cursor:pointer;
+  }
+  #login-screen button:hover{opacity:.92;}
+  #login-error{color:var(--cargo); font-size:13px; min-height:18px; margin-top:6px;}
 
-/* ── HEADER ── */
-.header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg); position: sticky; top: 0; z-index: 10; }
-.header-title { font-size: 17px; font-weight: 700; color: var(--text); }
-.header-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
-.header-user { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.header-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
-.header-name { font-size: 12px; font-weight: 600; color: var(--text); }
-.header-switch { font-size: 10px; color: var(--text-secondary); }
+  .hero{
+    border-top:1px solid var(--ink);
+    border-bottom:1px solid var(--ink);
+    padding:18px 0;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:18px;
+  }
+  .hero .stat .label{
+    font-size:11.5px; text-transform:none; letter-spacing:.3px; color:var(--ink-dim);
+    margin-bottom:4px;
+  }
+  .hero .stat .value{
+    font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:26px;
+  }
+  .hero .stat.ingresos .value{color:var(--abono);}
+  .hero .stat.egresos .value{color:var(--cargo);}
+  .hero .stat.neto .value{
+    border-bottom:3px double var(--ink);
+    padding-bottom:3px;
+    display:inline-block;
+  }
+  .hero .stat.neto .value.pos{color:var(--abono);}
+  .hero .stat.neto .value.neg{color:var(--cargo);}
+  .hero .stat .range{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-dim); margin-top:4px;}
 
-/* ── NAVEGACIÓN ── */
-.main-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
-.nav-btn { padding: 11px 4px; text-align: center; font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
-.nav-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+  .totales-tipo{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    padding:14px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .totales-tipo .stat .label{
+    font-size:11.5px; color:var(--ink-dim); margin-bottom:4px;
+  }
+  .totales-tipo .stat .value{
+    font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:20px;
+  }
+  .sortable{cursor:pointer; user-select:none;}
+  .sortable:hover{text-decoration:underline;}
 
-.status-bar { height: 3px; background: #eee; }
-.status-fill { height: 100%; background: var(--teal); width: 0%; transition: width 0.3s; }
+  .filters{
+    display:flex; flex-wrap:wrap; gap:14px 22px;
+    padding:16px 0; align-items:end;
+    border-bottom:1px solid var(--rule);
+  }
+  .filters .field{display:flex; flex-direction:column; gap:4px;}
+  .filters label{font-size:11.5px; color:var(--ink-dim);}
+  .filters input, .filters select{
+    font-family:'IBM Plex Mono', monospace; font-size:13.5px;
+    padding:6px 8px; border:1px solid var(--rule); border-radius:3px; background:#fff; color:var(--ink);
+  }
+  .filters input[type=search]{width:190px;}
+  .filters button.reset{
+    background:none; border:1px solid var(--ink-dim); color:var(--ink-dim);
+    border-radius:3px; padding:6px 12px; font-family:'Inter'; font-size:12.5px; cursor:pointer;
+  }
+  .filters button.reset:hover{background:var(--paper-deep);}
 
-.screen { padding: 1.25rem; }
-.screen.hidden { display: none; }
-.hidden { display: none; }
-#tabConfig { display: none; }
-#tabConfig.visible { display: block; }
+  section.cuentas{padding:20px 0; border-bottom:1px solid var(--rule);}
+  section.cuentas h3, section.movs h3, section.pend h3{
+    font-family:'Source Serif 4', serif; font-weight:600; font-size:17px; margin:0 0 12px;
+  }
+  table.cuentas-table{width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:13px;}
+  table.cuentas-table th{
+    text-align:right; font-weight:500; color:var(--ink-dim); font-size:11.5px; padding:4px 8px; border-bottom:1px solid var(--ink);
+  }
+  table.cuentas-table th:first-child{text-align:left;}
+  table.cuentas-table td{padding:6px 8px; text-align:right; border-bottom:1px solid var(--rule);}
+  table.cuentas-table td:first-child{text-align:left; font-family:'Inter'; font-weight:500;}
+  table.cuentas-table td.ing{color:var(--abono);}
+  table.cuentas-table td.egr{color:var(--cargo);}
 
-/* ── CAMPOS ── */
-.label { font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-.field-group { margin-bottom: 1.1rem; }
-select, input[type="text"], input[type="number"], textarea {
-  width: 100%; padding: 11px 13px; font-size: 15px;
-  border: 1px solid var(--border); border-radius: 10px;
-  background: var(--bg); color: var(--text);
-  font-family: inherit; appearance: none; -webkit-appearance: none;
-  outline: none; transition: border-color 0.15s;
-}
-select:focus, input:focus, textarea:focus { border-color: var(--teal); }
-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 34px; }
-textarea { resize: none; height: 85px; line-height: 1.5; }
+  section.movs{padding:20px 0;}
+  .movs-count{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-dim); margin-bottom:10px;}
+  .movs-count-row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .movs-total{font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600;}
+  table.movs-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.movs-table th{
+    text-align:left; font-family:'Inter'; font-weight:600; font-size:11.5px; color:var(--ink-dim);
+    padding:6px 8px; border-bottom:1px solid var(--ink); position:sticky; top:0; background:var(--paper);
+  }
+  table.movs-table td{padding:7px 8px; border-bottom:1px solid var(--rule); vertical-align:top;}
+  table.movs-table td.fecha, table.movs-table td.monto{font-family:'IBM Plex Mono',monospace; white-space:nowrap;}
+  table.movs-table td.monto{text-align:right;}
+  table.movs-table tr.ingreso td.monto{color:var(--abono);}
+  table.movs-table tr.egreso td.monto{color:var(--cargo);}
+  table.movs-table tr.transferencia_interna td.monto{color:var(--neutral);}
+  .tipo-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:1px 6px; border-radius:2px;
+    border:1px solid currentColor;
+  }
+  .tipo-tag.ingreso{color:var(--abono);}
+  .tipo-tag.egreso{color:var(--cargo);}
+  .tipo-tag.transferencia_interna{color:var(--neutral);}
+  .codigo-pill{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--band); font-weight:500;}
+  .concepto{color:var(--ink); max-width:340px;}
+  .concepto small{display:block; color:var(--ink-dim); font-size:11px; margin-top:2px;}
 
-/* ── TABS CAPTURA ── */
-.capture-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1.1rem; }
-.capture-tab { padding: 10px 6px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; text-align: center; transition: all 0.15s; }
-.capture-tab.active { border-color: var(--teal); background: var(--teal-light); }
-.capture-tab-icon { font-size: 22px; display: block; margin-bottom: 3px; }
-.capture-tab span { font-size: 11px; color: var(--text-secondary); }
-.capture-tab.active span { color: var(--teal-dark); font-weight: 600; }
-.capture-panel { display: none; }
-.capture-panel.active { display: block; }
+  section.pend{padding:20px 0 40px; border-top:1px solid var(--rule);}
+  .pend-item{
+    display:flex; justify-content:space-between; gap:16px; padding:9px 0;
+    border-bottom:1px solid var(--rule); font-size:13.5px;
+  }
+  .pend-item .desc{max-width:640px;}
+  .pend-item .desc small{display:block; color:var(--cargo); font-size:11.5px; margin-top:2px;}
+  .pend-item .monto{font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--cargo); white-space:nowrap;}
+  .pend-empty{color:var(--ink-dim); font-size:13.5px; font-style:italic;}
 
-/* ── FOTO ── */
-.photo-zone { border: 2px dashed var(--border); border-radius: 12px; cursor: pointer; background: var(--bg-secondary); transition: all 0.15s; position: relative; overflow: hidden; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-.photo-zone:hover { border-color: var(--teal); background: var(--teal-light); }
-.photo-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-.photo-zone-icon { font-size: 36px; }
-.photo-zone p { font-size: 14px; color: var(--text-secondary); }
-.photo-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 8px; display: none; }
+  .loading, .empty{color:var(--ink-dim); font-size:13.5px; padding:20px 0;}
+  .top-actions{display:flex; justify-content:flex-end; padding:10px 0 0;}
+  .top-actions button{
+    background:none; border:1px solid var(--ink-dim); color:var(--ink-dim); border-radius:3px;
+    padding:5px 12px; font-family:'Inter'; font-size:12px; cursor:pointer;
+  }
 
-/* ── VOZ ── */
-.voice-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem 1rem; text-align: center; background: var(--bg-secondary); transition: all 0.2s; margin-bottom: 10px; }
-.voice-zone.listening { border-color: var(--teal); background: var(--teal-light); animation: pulse 1.2s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-.mic-btn { width: 72px; height: 72px; border-radius: 50%; background: var(--teal); border: none; cursor: pointer; font-size: 30px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 14px rgba(26,127,110,0.3); }
-.mic-btn.recording { background: var(--red); box-shadow: 0 4px 18px rgba(192,57,43,0.4); transform: scale(1.08); }
-.mic-btn:active { transform: scale(0.95); }
-.voice-status { font-size: 13px; color: var(--text-secondary); margin-top: 10px; }
-.voice-status.active { color: var(--teal); font-weight: 600; }
-.voice-transcript { width: 100%; margin-top: 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; color: var(--text); min-height: 48px; line-height: 1.5; font-style: italic; display: none; }
-.voice-transcript.visible { display: block; }
-
-/* ── IA ── */
-.ai-loading { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; margin-top: 10px; }
-.ai-loading.visible { display: flex; }
-.spinner { width: 24px; height: 24px; border: 2.5px solid #eee; border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.ai-loading p { font-size: 13px; color: var(--text-secondary); }
-.ai-result { background: var(--bg-secondary); border-radius: 12px; padding: 12px; margin-top: 10px; display: none; border: 1px solid #eee; }
-.ai-result.visible { display: block; }
-.ai-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--teal-dark); background: var(--teal-light); padding: 3px 10px; border-radius: 20px; margin-bottom: 10px; }
-.ai-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee; }
-.ai-row:last-child { border-bottom: none; }
-.ai-row-label { font-size: 12px; color: var(--text-secondary); }
-.ai-row-val { font-size: 13px; font-weight: 600; color: var(--text); text-align: right; max-width: 60%; }
-
-/* ── BOTONES ── */
-.btn-primary { width: 100%; padding: 14px; background: var(--teal); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 0.5rem; }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary:active:not(:disabled) { opacity: 0.85; }
-.btn-secondary { width: 100%; padding: 11px; background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 8px; transition: background 0.15s; }
-.btn-secondary:active { background: var(--bg-secondary); }
-.char-count { font-size: 11px; color: #aaa; text-align: right; margin-top: 4px; }
-
-/* ── ÉXITO ── */
-.success-screen { text-align: center; padding: 2.5rem 1.25rem; }
-.success-icon { width: 68px; height: 68px; border-radius: 50%; background: var(--teal-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 32px; }
-.success-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-.success-detail { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem; }
-.success-card { background: var(--bg-secondary); border-radius: 12px; padding: 1rem; text-align: left; margin-bottom: 1.5rem; border: 1px solid #eee; }
-.success-card-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
-.success-card-row:last-child { border-bottom: none; }
-.success-card-label { font-size: 12px; color: var(--text-secondary); }
-.success-card-val { font-size: 13px; font-weight: 600; color: var(--text); text-align: right; }
-
-/* ── ERROR ── */
-.error-msg { background: #fff5f5; border: 1px solid #ffd0d0; border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--red); margin-top: 10px; display: none; }
-.error-msg.visible { display: block; }
-
-/* ── DASHBOARD ── */
-.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-.dash-month { font-size: 16px; font-weight: 700; color: var(--text); }
-.dash-nav { display: flex; gap: 4px; }
-.dash-nav button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-.dash-filter { display: flex; gap: 8px; margin-bottom: 1.1rem; }
-.dash-filter-btn { flex: 1; padding: 7px 4px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; text-align: center; font-family: inherit; transition: all 0.15s; }
-.dash-filter-btn.active { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); font-weight: 600; }
-.dash-total { background: var(--teal); border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
-.dash-total-label { font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 2px; }
-.dash-total-val { font-size: 28px; font-weight: 700; color: #fff; }
-.dash-total-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
-.dash-total-icon { font-size: 36px; opacity: 0.6; }
-.cat-bar-item { margin-bottom: 12px; }
-.cat-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.cat-bar-name { font-size: 13px; color: var(--text); font-weight: 500; }
-.cat-bar-monto { font-size: 13px; font-weight: 700; color: var(--text); }
-.cat-bar-track { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
-.cat-bar-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: width 0.5s ease; }
-.cat-bar-pct { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
-.cat-bar-item { cursor: pointer; }
-.cat-bar-header { position: relative; }
-.cat-bar-chevron { font-size: 11px; color: var(--text-secondary); margin-left: 6px; transition: transform 0.2s ease; display: inline-block; }
-.cat-bar-item.open .cat-bar-chevron { transform: rotate(90deg); }
-.cat-bar-detail { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
-.cat-bar-item.open .cat-bar-detail { max-height: 1000px; }
-.cat-bar-detail-inner { padding: 8px 0 4px; }
-.saldo-efectivo-card { display: flex; gap: 10px; margin-bottom: 12px; }
-.saldo-efectivo-item { position: relative; }
-.btn-add-efectivo { position: absolute; top: 8px; right: 8px; background: var(--primary, #0ea5e9); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; line-height: 22px; text-align: center; cursor: pointer; padding: 0; }
-.efectivo-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; justify-content: center; align-items: center; }
-.efectivo-modal-overlay.visible { display: flex; }
-.efectivo-modal { background: var(--bg-primary, #fff); border-radius: 16px; padding: 24px; width: 280px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
-.efectivo-modal h3 { margin: 0 0 16px; font-size: 16px; }
-.efectivo-modal input { width: 100%; box-sizing: border-box; border: 1px solid var(--border, #ddd); border-radius: 8px; padding: 10px 12px; font-size: 16px; margin-bottom: 12px; }
-.efectivo-modal-btns { display: flex; gap: 8px; }
-.efectivo-modal-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
-.btn-confirmar-efectivo { background: var(--primary, #0ea5e9); color: #fff; }
-.btn-cancelar-efectivo { background: var(--bg-secondary, #f0f0f0); color: var(--text-primary, #111); }
-.saldo-efectivo-item { flex: 1; background: var(--bg-secondary, #f5f5f5); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; }
-.saldo-efectivo-nombre { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
-.saldo-efectivo-monto { font-size: 18px; font-weight: 700; margin-top: 2px; }
-.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
-.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
-.empty-state p { font-size: 14px; }
-.dash-loading { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 14px; }
-
-/* ── HISTORIAL ── */
-.hist-filters { display: flex; gap: 8px; margin-bottom: 1rem; }
-.hist-filter-btn { flex: 1; padding: 7px 4px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; text-align: center; font-family: inherit; transition: all 0.15s; }
-.hist-filter-btn.active { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); font-weight: 600; }
-.hist-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f2f2f2; }
-.hist-item:last-child { border-bottom: none; }
-.hist-cat-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-.hist-info { flex: 1; min-width: 0; }
-.hist-concepto { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hist-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
-.hist-right { text-align: right; flex-shrink: 0; }
-.hist-monto { font-size: 15px; font-weight: 700; color: var(--text); }
-.hist-persona { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
-.hist-loading { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 14px; }
-
-/* ── CONFIG ── */
-.config-section { margin-bottom: 1.5rem; }
-.config-section-title { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
-.config-card { background: var(--bg-secondary); border-radius: 14px; border: 1px solid var(--border); padding: 1rem; }
-.config-user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.config-user-row:last-child { margin-bottom: 0; }
-.config-user-num { width: 32px; height: 32px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.config-save-msg { font-size: 13px; color: var(--teal); text-align: center; margin-top: 10px; display: none; font-weight: 600; }
-.config-save-msg.visible { display: block; }
-.config-info { background: var(--teal-light); border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--teal-dark); line-height: 1.5; margin-bottom: 1rem; }
-.supabase-url-field { font-size: 12px; }
-
-/* ── AJUSTE RESPONSIVE ── */
-@media (max-width: 380px) {
-  .capture-tabs { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .capture-tab-icon { font-size: 18px; }
-}
+  @media (max-width:720px){
+    .hero{grid-template-columns:1fr;}
+    table.movs-table{font-size:12px;}
+    .concepto{max-width:180px;}
+    .pend-item .desc{max-width:60%;}
+  }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <!-- ── SETUP (primer uso) ── -->
-  <div id="setupScreen" class="setup-screen hidden">
-    <div class="setup-logo">🏠</div>
-    <div class="setup-title">Bienvenido a Familia Gastos</div>
-    <div class="setup-sub">Configura los nombres una sola vez.<br>Cada dispositivo recuerda quién eres.</div>
-    <div class="setup-form">
-      <div class="setup-field">
-        <label>Usuario 1 — tú</label>
-        <input type="text" id="setupNombre1" placeholder="Ej: Jorge" maxlength="30">
-      </div>
-      <div class="setup-field">
-        <label>Usuario 2 — tu esposa</label>
-        <input type="text" id="setupNombre2" placeholder="Ej: Diana" maxlength="30">
-      </div>
-      <div class="setup-field">
-        <label>URL Supabase</label>
-        <input type="text" id="setupUrl" placeholder="https://xxxx.supabase.co" class="supabase-url-field">
-      </div>
-      <div class="setup-field">
-        <label>API Key Supabase (anon public)</label>
-        <input type="text" id="setupKey" placeholder="sb_publishable_..." class="supabase-url-field">
-      </div>
-      <div class="error-msg" id="setupError"></div>
-      <button class="btn-primary" onclick="guardarSetup()">Guardar y continuar →</button>
+<div id="login-screen">
+  <h2>PRS · Movimientos</h2>
+  <p>Inicia sesión con tu cuenta de PRS Construcciones.</p>
+  <input type="email" id="login-email" placeholder="correo@ejemplo.com" autocomplete="username">
+  <input type="password" id="login-password" placeholder="contraseña" autocomplete="current-password">
+  <button onclick="doLogin()">Entrar</button>
+  <div id="login-error"></div>
+</div>
+
+<div class="wrap" id="app" style="display:none;">
+  <div class="masthead">
+    <h1>PRS · Movimientos</h1>
+    <div class="sub" id="user-tag"></div>
+  </div>
+  <div class="top-actions"><button onclick="doLogout()">Cerrar sesión</button></div>
+
+  <div class="hero">
+    <div class="stat ingresos">
+      <div class="label">Ingresos</div>
+      <div class="value" id="stat-ingresos">$0.00</div>
+    </div>
+    <div class="stat egresos">
+      <div class="label">Egresos</div>
+      <div class="value" id="stat-egresos">$0.00</div>
+    </div>
+    <div class="stat neto">
+      <div class="label">Neto</div>
+      <div class="value" id="stat-neto">$0.00</div>
+      <div class="range" id="stat-range"></div>
     </div>
   </div>
 
-  <!-- ── SELECCIÓN USUARIO ── -->
-  <div id="userSelectScreen" class="user-select-screen hidden">
-    <div class="user-select-logo">🏠</div>
-    <div class="user-select-title">Familia Gastos</div>
-    <div class="user-select-sub">¿Quién registra?</div>
-    <div class="user-list" id="userList"></div>
+  <div class="totales-tipo">
+    <div class="stat">
+      <div class="label">Monto en bancos</div>
+      <div class="value" id="stat-bancos">$0.00</div>
+    </div>
+    <div class="stat">
+      <div class="label">Monto en efectivo</div>
+      <div class="value" id="stat-efectivo">$0.00</div>
+    </div>
   </div>
 
-  <!-- ── APP PRINCIPAL ── -->
-  <div id="mainApp" class="hidden">
-    <div class="header">
-      <div>
-        <div class="header-title">Familia Gastos</div>
-        <div class="header-sub" id="headerSub">Efectivo</div>
-      </div>
-      <div class="header-user" onclick="cambiarUsuario()">
-        <div class="header-avatar" id="headerAvatarEmoji">👤</div>
-        <div>
-          <div class="header-name" id="headerName"></div>
-          <div class="header-switch">Cambiar</div>
-        </div>
-      </div>
+  <section class="cuentas">
+    <h3>Por cuenta</h3>
+    <table class="cuentas-table" id="cuentas-table">
+      <thead><tr><th>Cuenta</th><th>Ingresos</th><th>Egresos</th><th>Neto</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <div class="filters" style="margin-top:8px;">
+    <div class="field">
+      <label for="f-desde">Desde</label>
+      <input type="date" id="f-desde">
     </div>
-
-    <div class="main-nav">
-      <button class="nav-btn active" onclick="showMainTab('capturar')">✏️ Capturar</button>
-      <button class="nav-btn" onclick="showMainTab('dashboard')">📊 Mes</button>
-      <button class="nav-btn" onclick="showMainTab('historial')">📋 Historial</button>
+    <div class="field">
+      <label for="f-hasta">Hasta</label>
+      <input type="date" id="f-hasta">
     </div>
-    <div class="status-bar"><div class="status-fill" id="statusFill"></div></div>
-
-    <!-- ── TAB CAPTURAR ── -->
-    <div id="tabCapturar">
-      <div class="screen" id="screenForm">
-        <div class="field-group">
-          <div class="label">Registrando como</div>
-          <div id="usuarioDisplay" style="padding:11px 13px;font-size:15px;border:1px solid var(--border);border-radius:10px;color:var(--text);background:var(--bg-secondary);font-weight:600;"></div>
-        </div>
-
-        <div class="field-group">
-          <div class="label">Método de captura</div>
-          <div class="capture-tabs">
-            <div class="capture-tab active" onclick="switchCaptureTab('foto')">
-              <span class="capture-tab-icon">📷</span>
-              <span>Foto ticket</span>
-            </div>
-            <div class="capture-tab" onclick="switchCaptureTab('voz')">
-              <span class="capture-tab-icon">🎤</span>
-              <span>Dictado</span>
-            </div>
-            <div class="capture-tab" onclick="switchCaptureTab('manual')">
-              <span class="capture-tab-icon">⌨️</span>
-              <span>Manual</span>
-            </div>
-          </div>
-
-          <!-- PANEL FOTO -->
-          <div class="capture-panel active" id="panelFoto">
-            <div class="photo-zone" id="photoZone">
-              <span class="photo-zone-icon">📸</span>
-              <p>Toca para tomar foto o elegir del carrete</p>
-              <input type="file" accept="image/*" multiple onchange="handlePhoto(this)">
-            </div>
-            <p id="photoLabel" style="font-size:13px;color:var(--text-secondary);min-height:18px;margin-top:4px;"></p>
-            <img id="photoPreview" class="photo-preview">
-            <div class="ai-loading" id="aiLoadingFoto">
-              <div class="spinner"></div>
-              <p>Leyendo ticket con IA...</p>
-            </div>
-            <div class="ai-result" id="aiResultFoto">
-              <div class="ai-tag">✨ Extraído por IA</div>
-              <div id="aiRowsFoto"></div>
-            </div>
-          </div>
-
-          <!-- PANEL VOZ -->
-          <div class="capture-panel" id="panelVoz">
-            <!-- Opción A: Web Speech API (Chrome/Safari con soporte) -->
-            <div class="voice-zone" id="voiceZone">
-              <button class="mic-btn" id="micBtn" onclick="toggleVoice()">🎤</button>
-              <div class="voice-status" id="voiceStatus">Toca el micrófono para dictar</div>
-            </div>
-            <div class="voice-transcript" id="voiceTranscript"></div>
-            <!-- Opción B: textarea con dictado de teclado (siempre visible como fallback) -->
-            <div id="voiceTextareaWrap" style="margin-top:10px;display:none;">
-              <p style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">O escribe / dicta con el teclado:</p>
-              <textarea id="voiceTextarea" rows="3"
-                style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;resize:none;"
-                placeholder='Ej: "250 pesos comida McDonald\'s"'></textarea>
-            </div>
-            <button class="btn-secondary" id="btnInterpretarVoz" onclick="procesarTextoVoz()" style="display:none">✨ Interpretar con IA</button>
-            <div class="ai-loading" id="aiLoadingVoz">
-              <div class="spinner"></div>
-              <p>Interpretando con IA...</p>
-            </div>
-            <div class="ai-result" id="aiResultVoz">
-              <div class="ai-tag">✨ Extraído por IA</div>
-              <div id="aiRowsVoz"></div>
-            </div>
-          </div>
-
-          <!-- PANEL MANUAL -->
-          <div class="capture-panel" id="panelManual">
-            <div class="field-group">
-              <div class="label">Categoría</div>
-              <select id="categoriaManual">
-                <option value="">Selecciona...</option>
-                <option value="Casa">🏠 Casa</option>
-                <option value="Hipoteca">🏦 Hipoteca</option>
-                <option value="Comida Casa">🛒 Comida Casa</option>
-                <option value="Comida Postre">🍰 Comida Postre</option>
-                <option value="Comida Chatarra">🍟 Comida Chatarra</option>
-                <option value="Comida Fuera">🍽️ Comida Fuera</option>
-                <option value="Café Fuera">☕ Café Fuera</option>
-                <option value="Salud">💊 Salud</option>
-                <option value="Cuidado Personal">🧴 Cuidado Personal</option>
-                <option value="Terapias">💆 Terapias</option>
-                <option value="Educación">📚 Educación</option>
-                <option value="Vehículos">🚗 Vehículos</option>
-                <option value="Gasolina">⛽ Gasolina</option>
-                <option value="Country">⛳ Country</option>
-                <option value="Entretenimiento">🎬 Entretenimiento</option>
-                <option value="Ropa">👕 Ropa</option>
-                <option value="Viajes">✈️ Viajes</option>
-                <option value="Servicios">💡 Servicios</option>
-                <option value="Donaciones">❤️ Donaciones</option>
-                <option value="Regalos">🎁 Regalos</option>
-                <option value="Mascotas">🐾 Mascotas</option>
-                <option value="Bebés/Niños">🍼 Bebés/Niños</option>
-                <option value="Alcohol">🍷 Alcohol</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <div class="label">Concepto</div>
-              <input type="text" id="conceptoManual" placeholder="¿En qué se gastó?">
-            </div>
-            <div class="field-group">
-              <div class="label">Lugar / Proveedor</div>
-              <input type="text" id="proveedorManual" placeholder="Tienda, restaurante, etc.">
-            </div>
-            <div class="field-group" style="margin-bottom:0">
-              <div class="label">Monto ($)</div>
-              <input type="number" id="montoManual" placeholder="0.00" step="0.01" min="0">
-            </div>
-          </div>
-        </div>
-
-        <div class="field-group" style="margin-top:1rem;">
-          <div class="label">Fecha del gasto</div>
-          <input type="date" id="fechaGasto" style="width:100%;box-sizing:border-box;border:1px solid var(--border,#ddd);border-radius:8px;padding:10px 12px;font-size:16px;background:var(--bg-primary,#fff);color:var(--text-primary,#111);">
-        </div>
-
-        <div class="field-group" style="margin-top:1rem;">
-          <div class="label">Forma de pago</div>
-          <select id="formaPago">
-            <option value="efectivo">💵 Efectivo</option>
-            <option value="Débito Banorte">💳 Débito Banorte</option>
-            <option value="Débito Banamex Bea">💳 Débito Banamex Bea</option>
-            <option value="TDC Jorge INVEX">💳 TDC Jorge INVEX</option>
-            <option value="TDC Bea">💳 TDC Bea</option>
-            <option value="TDC Santander">💳 TDC Santander</option>
-            <option value="TDC Banamex">💳 TDC Banamex</option>
-            <option value="Transferencia">🏦 Transferencia</option>
-            <option value="Otro">🔹 Otro</option>
-          </select>
-        </div>
-
-        <div class="error-msg" id="errorMsg"></div>
-        <button class="btn-primary" id="btnRegistrar" onclick="registrarGasto()">✓ Registrar gasto</button>
-      </div>
-
-      <div class="screen hidden" id="screenSuccess">
-        <div class="success-screen">
-          <div class="success-icon">✓</div>
-          <div class="success-title">Gasto registrado</div>
-          <div class="success-detail" id="successDetail"></div>
-          <div class="success-card" id="successCard"></div>
-          <button class="btn-primary" onclick="nuevoGasto()">+ Registrar otro</button>
-        </div>
-      </div>
+    <div class="field">
+      <label for="f-cuenta">Cuenta <span style="font-weight:400;">(clic para elegir varias)</span></label>
+      <select id="f-cuenta" multiple size="6" style="min-width:170px;">
+        <optgroup label="Bancos">
+          <option>BBVA</option>
+          <option>Banorte</option>
+          <option>Santander</option>
+          <option>Santander (EOM)</option>
+          <option>STP</option>
+        </optgroup>
+        <optgroup label="Efectivo">
+          <option>Efectivo PRS</option>
+          <option>Efectivo EOMA</option>
+          <option>Caja Chica LCC</option>
+          <option>Caja Chica JPC</option>
+        </optgroup>
+      </select>
     </div>
-
-    <!-- ── TAB DASHBOARD ── -->
-    <div id="tabDashboard" class="hidden">
-      <div class="screen">
-        <div class="dash-header">
-          <div class="dash-month" id="dashMonth"></div>
-          <div class="dash-nav">
-            <button onclick="cambiarMes(-1)">‹</button>
-            <button onclick="cambiarMes(1)">›</button>
-          </div>
-        </div>
-        <div class="dash-filter" id="dashFilter">
-          <button class="dash-filter-btn active" onclick="setDashFilter('todos')">Todos</button>
-          <button class="dash-filter-btn" id="dashFilterU1" onclick="setDashFilter('u1')"></button>
-          <button class="dash-filter-btn" id="dashFilterU2" onclick="setDashFilter('u2')"></button>
-        </div>
-        <div id="dashContent"><div class="dash-loading">Cargando...</div></div>
-      </div>
+    <div class="field">
+      <label for="f-unidad">Unidad de negocio</label>
+      <select id="f-unidad">
+        <option value="">Todas</option>
+        <option>PRS Construcciones</option>
+        <option>Constructora EOMA</option>
+        <option>CERSIN</option>
+        <option>DRO JP</option>
+        <option>PRS Mantenimientos</option>
+        <option value="__none__">Sin asignar</option>
+      </select>
     </div>
-
-    <!-- ── TAB HISTORIAL ── -->
-    <div id="tabHistorial" class="hidden">
-      <div class="screen">
-        <div class="hist-filters" id="histFilters">
-          <button class="hist-filter-btn active" onclick="setHistFilter('todos')">Todos</button>
-          <button class="hist-filter-btn" id="histFilterU1" onclick="setHistFilter('u1')"></button>
-          <button class="hist-filter-btn" id="histFilterU2" onclick="setHistFilter('u2')"></button>
-        </div>
-        <div id="histContent"><div class="hist-loading">Cargando...</div></div>
-      </div>
+    <div class="field">
+      <label for="f-codigo">Buscar código de reporte / solicitud</label>
+      <input type="search" id="f-codigo" placeholder="ej. 04261489858" list="codigos-datalist" autocomplete="off">
+      <datalist id="codigos-datalist"></datalist>
     </div>
-
-    <!-- ── TAB CONFIG (oculto, accesible desde header) ── -->
-    <div id="tabConfig" class="hidden">
-      <div class="screen">
-        <div class="config-info">
-          Estos cambios aplican para todos los dispositivos. Comparte la app con tu esposa enviándole el archivo HTML — ella verá los mismos datos en tiempo real.
-        </div>
-        <div class="config-section">
-          <div class="config-section-title">Usuarios</div>
-          <div class="config-card">
-            <div class="config-user-row">
-              <div class="config-user-num">1</div>
-              <input type="text" id="configNombre1" placeholder="Usuario 1" style="margin:0">
-            </div>
-            <div class="config-user-row" style="margin-bottom:0">
-              <div class="config-user-num">2</div>
-              <input type="text" id="configNombre2" placeholder="Usuario 2" style="margin:0">
-            </div>
-          </div>
-        </div>
-        <div class="config-section">
-          <div class="config-section-title">Conexión Supabase</div>
-          <div class="config-card">
-            <div class="field-group">
-              <div class="label">URL</div>
-              <input type="text" id="configUrl" placeholder="https://xxxx.supabase.co" class="supabase-url-field">
-            </div>
-            <div class="field-group" style="margin-bottom:0">
-              <div class="label">API Key (anon public)</div>
-              <input type="text" id="configKey" placeholder="sb_publishable_..." class="supabase-url-field">
-            </div>
-          </div>
-        </div>
-        <button class="btn-primary" onclick="guardarConfig()">Guardar cambios</button>
-        <div class="config-save-msg" id="configSaveMsg">✓ Cambios guardados</div>
-      </div>
+    <div class="field">
+      <label for="f-tipo">Mostrar</label>
+      <select id="f-tipo">
+        <option value="">Todos los movimientos</option>
+        <option value="sin_transferencias">Ingresos y egresos (sin traspasos)</option>
+        <option value="ingreso">Solo ingresos</option>
+        <option value="egreso">Solo egresos</option>
+      </select>
     </div>
+    <button class="reset" onclick="resetFilters()">Quitar filtros</button>
+  </div>
 
-  </div><!-- /mainApp -->
+  <section class="movs">
+    <h3>Movimientos</h3>
+    <div class="movs-count-row">
+      <div class="movs-count" id="movs-count"></div>
+      <div class="movs-total" id="movs-total"></div>
+    </div>
+    <table class="movs-table">
+      <thead><tr><th>Fecha</th><th>Cuenta</th><th>Tipo</th><th>Concepto</th><th class="sortable" id="th-codigo" onclick="toggleSort('codigo')">Código <span id="sort-codigo"></span></th><th class="sortable" id="th-monto" style="text-align:right" onclick="toggleSort('monto')">Monto <span id="sort-monto"></span></th></tr></thead>
+      <tbody id="movs-body"></tbody>
+    </table>
+    <div class="empty" id="movs-empty" style="display:none;">No hay movimientos con estos filtros.</div>
+  </section>
+
+  <section class="pend">
+    <h3>Pendientes de conciliar</h3>
+    <div id="pend-list"></div>
+  </section>
 </div>
 
 <script>
-// ─────────────────────────────────────────────
-// ESTADO GLOBAL
-// ─────────────────────────────────────────────
-let SUPABASE_URL = '';
-let SUPABASE_KEY = '';
-let NOMBRES = { u1: '', u2: '' };
-let currentUser = null;   // 'u1' | 'u2'
-let currentCaptureTab = 'foto';
-let extractedData = {};
-let recognition = null;
-let isRecording = false;
-let voiceText = '';
-let dashMes = null;       // { year, month } (1-indexed)
-let dashGastosPorCat = {}; // gastos agrupados por categoría del mes actual, para el detalle expandible
-let dashFilter = 'todos';
-let histFilter = 'todos';
+const SUPABASE_URL = 'https://kzeculiumpoaeoanwscd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_i0WBoZq-Zyz1K_-bPysD4w_vUGbNQgS';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const CAT_ICONS = {
-  'Casa':'🏠','Hipoteca':'🏦','Comida Casa':'🛒','Comida Postre':'🍰','Comida Chatarra':'🍟',
-  'Comida Fuera':'🍽️','Café Fuera':'☕','Salud':'💊','Cuidado Personal':'🧴','Terapias':'💆','Educación':'📚',
-  'Vehículos':'🚗','Gasolina':'⛽','Country':'⛳','Entretenimiento':'🎬',
-  'Ropa':'👕','Viajes':'✈️','Servicios':'💡','Donaciones':'❤️','Regalos':'🎁',
-  'Alcohol':'🍷','Mascotas':'🐾','Bebés/Niños':'🍼','Otros':'📦'
-};
+let allMovs = [];
+let allPend = [];
+let sortState = { campo: null, dir: 1 }; // dir: 1 asc, -1 desc
 
-// ─────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────
-// Valores por defecto: la anon/publishable key está diseñada para exponerse
-// del lado del cliente (la seguridad real vive en las políticas de Supabase),
-// así que no hay riesgo en dejarla aquí. Esto evita tener que capturar
-// usuario/URL/key en cada dispositivo nuevo.
-const DEFAULT_CONFIG = {
-  u1: 'Jorge',
-  u2: 'Beatriz Castelo',
-  url: 'https://jduroyiluikxzdvpgyss.supabase.co',
-  key: 'sb_publishable_3FJZ_UaHpNi-qT1ElcXGGg_glbnhsPi'
-};
-
-function init() {
-  let cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
-  if (!cfg.u1 || !cfg.u2 || !cfg.url || !cfg.key) {
-    // Sin config guardada: usar los valores por defecto automáticamente
-    cfg = DEFAULT_CONFIG;
-    localStorage.setItem('familia_config', JSON.stringify(cfg));
-  }
-  NOMBRES.u1 = cfg.u1;
-  NOMBRES.u2 = cfg.u2;
-  SUPABASE_URL = cfg.url;
-  SUPABASE_KEY = cfg.key;
-
-  // Rellenar filtros dinámicos
-  document.getElementById('dashFilterU1').textContent = NOMBRES.u1;
-  document.getElementById('dashFilterU2').textContent = NOMBRES.u2;
-  document.getElementById('histFilterU1').textContent = NOMBRES.u1;
-  document.getElementById('histFilterU2').textContent = NOMBRES.u2;
-
-  const savedUser = localStorage.getItem('familia_user');
-  if (savedUser === 'u1' || savedUser === 'u2') {
-    currentUser = savedUser;
-    iniciarApp();
-  } else {
-    mostrarSeleccionUsuario();
-  }
+const CUENTA_ORDEN = ['STP','Santander','BBVA','Banorte','Efectivo PRS','Caja Chica LCC','Caja Chica JPC','Santander (EOM)','Efectivo EOMA'];
+function ordenCuentas(a,b){
+  const ia = CUENTA_ORDEN.indexOf(a), ib = CUENTA_ORDEN.indexOf(b);
+  const pa = ia === -1 ? CUENTA_ORDEN.length : ia;
+  const pb = ib === -1 ? CUENTA_ORDEN.length : ib;
+  if(pa !== pb) return pa - pb;
+  return a.localeCompare(b);
 }
 
-// ─────────────────────────────────────────────
-// SETUP (primer uso)
-// ─────────────────────────────────────────────
-function guardarSetup() {
-  const n1 = document.getElementById('setupNombre1').value.trim();
-  const n2 = document.getElementById('setupNombre2').value.trim();
-  const url = document.getElementById('setupUrl').value.trim().replace(/\/$/, '');
-  const key = document.getElementById('setupKey').value.trim();
-  const err = document.getElementById('setupError');
-
-  if (!n1 || !n2) { showSetupError('Ingresa los dos nombres.'); return; }
-  if (!url.startsWith('https://')) { showSetupError('La URL debe empezar con https://'); return; }
-  if (!key) { showSetupError('Ingresa el API Key.'); return; }
-
-  localStorage.setItem('familia_config', JSON.stringify({ u1: n1, u2: n2, url, key }));
-  err.classList.remove('visible');
-  init();
+function money(n){
+  const v = Number(n)||0;
+  const sign = v<0 ? '-' : '';
+  return sign + '$' + Math.abs(v).toLocaleString('es-MX',{minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
-function showSetupError(msg) {
-  const el = document.getElementById('setupError');
-  el.textContent = msg;
-  el.classList.add('visible');
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ errEl.textContent = 'No se pudo entrar: correo o contraseña incorrectos.'; return; }
+  showApp(data.session);
 }
 
-// ─────────────────────────────────────────────
-// SELECCIÓN DE USUARIO
-// ─────────────────────────────────────────────
-function mostrarSeleccionUsuario() {
-  document.getElementById('setupScreen').classList.add('hidden');
-  document.getElementById('mainApp').classList.add('hidden');
-  document.getElementById('userSelectScreen').classList.remove('hidden');
-
-  document.getElementById('userList').innerHTML = `
-    <button class="user-card primary" onclick="selectUser('u1')">
-      <div class="user-avatar">👤</div>
-      <div>
-        <div class="user-name">${NOMBRES.u1}</div>
-        <div class="user-role">Usuario 1</div>
-      </div>
-    </button>
-    <button class="user-card" onclick="selectUser('u2')">
-      <div class="user-avatar">👤</div>
-      <div>
-        <div class="user-name">${NOMBRES.u2}</div>
-        <div class="user-role">Usuario 2</div>
-      </div>
-    </button>`;
+async function doLogout(){
+  await sb.auth.signOut();
+  location.reload();
 }
 
-function selectUser(uid) {
-  currentUser = uid;
-  localStorage.setItem('familia_user', uid);
-  iniciarApp();
+function showApp(session){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-tag').textContent = session.user.email;
+  loadData();
 }
 
-function cambiarUsuario() {
-  localStorage.removeItem('familia_user');
-  currentUser = null;
-  document.getElementById('mainApp').classList.add('hidden');
-  mostrarSeleccionUsuario();
-}
+async function loadData(){
+  const { data: movs, error: e1 } = await sb.from('movimientos_bancarios').select('*').order('fecha', { ascending:false });
+  const { data: facs, error: e2 } = await sb.from('facturas').select('*').eq('pendiente_conciliar', true);
+  if(e1){ document.getElementById('movs-empty').textContent = 'Error cargando movimientos.'; document.getElementById('movs-empty').style.display='block'; return; }
+  allPend = (facs || []).filter(f => f.pendiente_conciliar);
 
-function iniciarApp() {
-  document.getElementById('userSelectScreen').classList.add('hidden');
-  document.getElementById('setupScreen').classList.add('hidden');
-  document.getElementById('mainApp').classList.remove('hidden');
-
-  const nombre = NOMBRES[currentUser];
-  document.getElementById('headerName').textContent = nombre;
-  document.getElementById('usuarioDisplay').textContent = nombre;
-
-  const now = new Date();
-  dashMes = { year: now.getFullYear(), month: now.getMonth() + 1 };
-
-  showMainTab('capturar');
-}
-
-// ─────────────────────────────────────────────
-// TABS PRINCIPALES
-// ─────────────────────────────────────────────
-function showMainTab(tab) {
-  const tabs = ['capturar', 'dashboard', 'historial'];
-  const btns = document.querySelectorAll('.nav-btn');
-  btns.forEach((b, i) => b.classList.toggle('active', tabs[i] === tab));
-
-  // Ocultar todos primero
-  ['tabCapturar','tabDashboard','tabHistorial','tabConfig'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.add('hidden');
-    el.style.display = 'none';
-  });
-
-  // Mostrar solo el activo
-  const activeId = tab === 'capturar' ? 'tabCapturar' : tab === 'dashboard' ? 'tabDashboard' : 'tabHistorial';
-  const activeEl = document.getElementById(activeId);
-  activeEl.classList.remove('hidden');
-  activeEl.style.display = 'block';
-
-  // Actualizar labels de filtros con nombres actuales
-  const u1 = NOMBRES.u1 || 'Usuario 1';
-  const u2 = NOMBRES.u2 || 'Usuario 2';
-  ['dashFilterU1','histFilterU1'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = u1; });
-  ['dashFilterU2','histFilterU2'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = u2; });
-
-  if (tab === 'dashboard') cargarDashboard();
-  if (tab === 'historial') cargarHistorial();
-}
-
-// ─────────────────────────────────────────────
-// TABS CAPTURA
-// ─────────────────────────────────────────────
-function switchCaptureTab(tab) {
-  currentCaptureTab = tab;
-  extractedData = {};
-  document.querySelectorAll('.capture-tab').forEach((t, i) => {
-    t.classList.toggle('active', ['foto', 'voz', 'manual'][i] === tab);
-  });
-  document.querySelectorAll('.capture-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-
-  // Detener grabación si cambia tab
-  if (tab !== 'voz' && isRecording) stopVoice();
-}
-
-// ─────────────────────────────────────────────
-// FOTO → IA
-// ─────────────────────────────────────────────
-function toBase64(file) {
-  return new Promise((res, rej) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const maxSize = 1024;
-      let w = img.width, h = img.height;
-      if (w > maxSize || h > maxSize) {
-        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-        else { w = Math.round(w * maxSize / h); h = maxSize; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      res(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
-    };
-    img.onerror = rej;
-    img.src = url;
-  });
-}
-
-let extractedGastos = [];
-
-async function handlePhoto(input) {
-  if (!input.files[0]) return;
-  const file = input.files[0];
-  const preview = document.getElementById('photoPreview');
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = 'block';
-  document.getElementById('photoLabel').textContent = '✓ ' + file.name;
-  document.getElementById('aiLoadingFoto').classList.add('visible');
-  document.getElementById('aiResultFoto').classList.remove('visible');
-  try {
-    const base64 = await toBase64(file);
-    const result = await callClaudeImagen(base64);
-    if (result && Array.isArray(result.gastos)) {
-      extractedGastos = result.gastos.map(g => ({
-        monto: g.monto, concepto: g.concepto,
-        categoria: g.categoria || 'Casa',
-        proveedor: result.proveedor || null,
-        fecha: result.fecha || null
-      }));
-    } else if (result && result.monto != null) {
-      extractedGastos = [{
-        monto: result.monto, concepto: result.concepto,
-        categoria: result.categoria || 'Casa',
-        proveedor: result.proveedor || null, fecha: result.fecha || null
-      }];
-    } else {
-      extractedGastos = [];
-    }
-    renderAiRowsFoto(extractedGastos);
-    document.getElementById('aiResultFoto').classList.add('visible');
-  } catch(e) {
-    showError('No se pudo leer el ticket. Intenta de nuevo o usa captura manual.');
-    console.error(e);
-  }
-  document.getElementById('aiLoadingFoto').classList.remove('visible');
-}
-
-function renderAiRowsFoto(gastos) {
-  const cont = document.getElementById('aiRowsFoto');
-  if (!gastos.length) {
-    cont.innerHTML = '<div class="ai-row"><span class="ai-row-val">No se detectaron gastos. Usa captura manual.</span></div>';
-    return;
-  }
-  const catOptions = Object.keys(CAT_ICONS).filter(c => c !== 'Otros')
-    .map(c => `<option value="${c}">${CAT_ICONS[c] || ''} ${c}</option>`).join('');
-  cont.innerHTML = gastos.map((g, i) => `
-    <div class="ai-row" style="flex-direction:column;align-items:stretch;gap:6px;border-bottom:1px solid var(--border,#eee);padding-bottom:10px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <input type="text" value="${(g.concepto || '').replace(/"/g,'&quot;')}" oninput="extractedGastos[${i}].concepto=this.value"
-          style="flex:1;border:none;background:transparent;font-weight:600;font-size:14px;color:var(--text-primary,#111);">
-        <button onclick="quitarGastoDesglosado(${i})" style="border:none;background:transparent;color:#c33;font-size:16px;padding:0 4px;">✕</button>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span style="font-size:13px;color:var(--text-secondary);">$</span>
-        <input type="number" step="0.01" min="0" value="${g.monto ?? ''}" oninput="extractedGastos[${i}].monto=parseFloat(this.value)||0"
-          style="width:90px;border:1px solid var(--border,#ddd);border-radius:6px;padding:4px 6px;font-size:14px;">
-        <select onchange="extractedGastos[${i}].categoria=this.value" style="flex:1;border:1px solid var(--border,#ddd);border-radius:6px;padding:4px 6px;font-size:14px;">
-          ${catOptions.replace(`value="${g.categoria}"`, `value="${g.categoria}" selected`)}
-        </select>
-      </div>
-    </div>
-  `).join('') + `<div class="ai-row" style="font-weight:600;"><span class="ai-row-label">Total</span><span class="ai-row-val">$${gastos.reduce((s,g)=>s+(Number(g.monto)||0),0).toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>`;
-}
-
-function quitarGastoDesglosado(i) {
-  extractedGastos.splice(i, 1);
-  renderAiRowsFoto(extractedGastos);
-}
-
-async function callClaudeImagen(base64) {
-  const resp = await fetch('/api/extract', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: base64, mediaType: 'image/jpeg' })
-  });
-  if (!resp.ok) throw new Error(await resp.text());
-  return await resp.json();
-}
-
-// ─────────────────────────────────────────────
-// VOZ → IA (Web Speech API nativa)
-// continuous=true: iOS Safari no cierra el mic solo; el usuario para manualmente
-// ─────────────────────────────────────────────
-function initSpeechRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    // Sin soporte: mostrar textarea como fallback
-    document.getElementById('voiceZone').style.display = 'none';
-    document.getElementById('voiceTextareaWrap').style.display = 'block';
-    document.getElementById('btnInterpretarVoz').style.display = 'block';
-    return null;
-  }
-  const rec = new SpeechRecognition();
-  rec.lang = 'es-MX';
-  rec.continuous = true;       // clave para iOS: no corta solo
-  rec.interimResults = true;   // muestra texto mientras habla
-
-  rec.onresult = (e) => {
-    let interim = '';
-    let final = '';
-    for (let i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        final += e.results[i][0].transcript + ' ';
-      } else {
-        interim += e.results[i][0].transcript;
-      }
-    }
-    // Acumular finales + mostrar interim en gris
-    if (final) voiceText = final.trim();
-    const el = document.getElementById('voiceTranscript');
-    el.textContent = (voiceText ? voiceText + ' ' : '') + interim;
-    el.classList.add('visible');
+  // Mapa código -> unidad_negocio (desde `solicitudes`), para poder asignar unidad de negocio
+  // a los movimientos en efectivo (que no la traen directo). Códigos especiales que no son
+  // solicitudes de cliente se resuelven con reglas fijas abajo — ajustar aquí si cambia el criterio.
+  const { data: solis } = await sb.from('solicitudes').select('codigo, unidad_negocio');
+  const unidadPorCodigo = {};
+  (solis || []).forEach(s => { unidadPorCodigo[s.codigo] = s.unidad_negocio; });
+  const UNIDAD_CODIGOS_ESPECIALES = {
+    'PRS-OFICINA': 'PRS Construcciones',
+    'PRS-EQUIPO': 'PRS Construcciones',
+    'INVCERSIN': 'CERSIN',
   };
-
-  rec.onend = () => {
-    // En continuous=true, onend solo ocurre si el user para o hay error
-    stopVoice();
-    if (voiceText.trim()) {
-      document.getElementById('btnInterpretarVoz').style.display = 'block';
-    }
-  };
-
-  rec.onerror = (e) => {
-    stopVoice();
-    if (e.error === 'not-allowed') {
-      showError('Permiso de micrófono denegado. Ve a Configuración → Safari → Micrófono.');
-    } else if (e.error === 'no-speech') {
-      // silencio prolongado — reiniciar si sigue grabando
-      if (isRecording) {
-        try { recognition.start(); } catch(_) {}
-      }
-    }
-  };
-
-  return rec;
-}
-
-function toggleVoice() {
-  if (isRecording) { stopVoice(); return; }
-
-  if (!recognition) recognition = initSpeechRecognition();
-  if (!recognition) return; // fallback a textarea ya activado
-
-  voiceText = '';
-  document.getElementById('voiceTranscript').textContent = '';
-  document.getElementById('voiceTranscript').classList.remove('visible');
-  document.getElementById('btnInterpretarVoz').style.display = 'none';
-  document.getElementById('aiResultVoz').classList.remove('visible');
-  extractedData = {};
-
-  try {
-    recognition.start();
-    isRecording = true;
-    document.getElementById('micBtn').classList.add('recording');
-    document.getElementById('micBtn').textContent = '⏹';
-    document.getElementById('voiceStatus').textContent = 'Escuchando... toca ⏹ cuando termines';
-    document.getElementById('voiceStatus').classList.add('active');
-    document.getElementById('voiceZone').classList.add('listening');
-  } catch(e) {
-    showError('Error al iniciar el micrófono. Recarga la página e intenta de nuevo.');
-  }
-}
-
-function stopVoice() {
-  if (recognition && isRecording) {
-    try { recognition.stop(); } catch(e) {}
-  }
-  isRecording = false;
-  document.getElementById('micBtn').classList.remove('recording');
-  document.getElementById('micBtn').textContent = '🎤';
-  // Mostrar el texto final del transcript si voiceText está vacío (por si solo llegó interim)
-  const transcriptEl = document.getElementById('voiceTranscript');
-  if (!voiceText && transcriptEl.textContent.trim()) {
-    voiceText = transcriptEl.textContent.trim();
-  }
-  document.getElementById('voiceStatus').textContent = voiceText ? '✓ Listo — toca "Interpretar"' : 'Toca el micrófono para dictar';
-  document.getElementById('voiceStatus').classList.remove('active');
-  document.getElementById('voiceZone').classList.remove('listening');
-  if (voiceText.trim()) {
-    document.getElementById('btnInterpretarVoz').style.display = 'block';
-  }
-}
-
-async function procesarTextoVoz() {
-  // Prioridad: 1) voz reconocida, 2) transcript visible, 3) textarea fallback
-  const textareaEl = document.getElementById('voiceTextarea');
-  const texto = voiceText.trim()
-    || document.getElementById('voiceTranscript').textContent.trim()
-    || (textareaEl ? textareaEl.value.trim() : '');
-  if (!texto) { showError('Escribe o dicta algo primero.'); return; }
-  document.getElementById('aiLoadingVoz').classList.add('visible');
-  document.getElementById('aiResultVoz').classList.remove('visible');
-  document.getElementById('btnInterpretarVoz').style.display = 'none';
-  try {
-    const result = await callClaudeTexto(texto);
-    extractedData = result;
-    renderAiRows('aiRowsVoz', result);
-    document.getElementById('aiResultVoz').classList.add('visible');
-  } catch(e) {
-    showError('Error al interpretar. Intenta de nuevo.');
-    document.getElementById('btnInterpretarVoz').style.display = 'block';
-  }
-  document.getElementById('aiLoadingVoz').classList.remove('visible');
-}
-
-async function callClaudeTexto(texto) {
-  const resp = await fetch('/api/extract-text', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ texto })
-  });
-  if (!resp.ok) throw new Error(await resp.text());
-  return await resp.json();
-}
-
-// ─────────────────────────────────────────────
-// RENDER IA RESULT
-// ─────────────────────────────────────────────
-function renderAiRows(containerId, data) {
-  const labels = {
-    monto: 'Monto', proveedor: 'Lugar/Proveedor',
-    concepto: 'Concepto', categoria: 'Categoría', fecha: 'Fecha'
-  };
-  document.getElementById(containerId).innerHTML = Object.entries(labels).map(([k, l]) => {
-    const v = data[k];
-    let display;
-    if (k === 'monto' && v != null) display = '$' + Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2 });
-    else if (k === 'categoria' && v) display = (CAT_ICONS[v] || '') + ' ' + v;
-    else display = v || '—';
-    return `<div class="ai-row"><span class="ai-row-label">${l}</span><span class="ai-row-val">${display}</span></div>`;
-  }).join('');
-}
-
-// ─────────────────────────────────────────────
-// REGISTRAR GASTO
-// ─────────────────────────────────────────────
-function showError(msg) {
-  const el = document.getElementById('errorMsg');
-  el.textContent = msg;
-  el.classList.add('visible');
-  setTimeout(() => el.classList.remove('visible'), 5000);
-}
-
-async function registrarGasto() {
-  let gastosAGuardar = [];
-
-  if (currentCaptureTab === 'manual') {
-    const monto = parseFloat(document.getElementById('montoManual').value);
-    if (!monto || monto <= 0) { showError('Ingresa un monto válido.'); return; }
-    gastosAGuardar = [{
-      monto,
-      concepto: document.getElementById('conceptoManual').value.trim() || null,
-      proveedor: document.getElementById('proveedorManual').value.trim() || null,
-      categoria: document.getElementById('categoriaManual').value || 'Otros',
-      fecha: document.getElementById('fechaGasto').value || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
-    }];
-  } else if (currentCaptureTab === 'foto') {
-    if (!extractedGastos || !extractedGastos.length) {
-      showError('Primero captura el ticket con foto y espera el resultado de IA.');
-      return;
-    }
-    gastosAGuardar = extractedGastos.filter(g => g.monto > 0);
-    if (!gastosAGuardar.length) { showError('No hay gastos válidos para guardar.'); return; }
-  } else {
-    if (!extractedData || !extractedData.monto) {
-      showError('Primero captura el gasto con dictado y espera el resultado de IA.');
-      return;
-    }
-    gastosAGuardar = [extractedData];
+  function resolverUnidad(codigo){
+    if(!codigo) return null;
+    if(unidadPorCodigo[codigo]) return unidadPorCodigo[codigo];
+    if(UNIDAD_CODIGOS_ESPECIALES[codigo]) return UNIDAD_CODIGOS_ESPECIALES[codigo];
+    return null; // código no reconocido (ajustes de saldo, BADNAV26, etc.) — sin unidad asignada
   }
 
-  const formaPago = document.getElementById('formaPago').value;
-  const btn = document.getElementById('btnRegistrar');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner" style="border-color:#ffffff55;border-top-color:#fff"></div> Guardando...';
+  // Cajas de efectivo (Efectivo PRS, Caja Chica JPC, Caja Chica LCC): se integran al mismo
+  // arreglo de movimientos, cada una como su propia "cuenta", para que aparezcan en la lista
+  // y sumen a los totales de arriba igual que las cuentas bancarias.
+  let movsEfectivo = [];
+  const { data: cajas } = await sb.from('cajas_efectivo').select('*');
+  if(cajas && cajas.length){
+    const { data: movsEf } = await sb.from('movimientos_efectivo').select('*').in('caja_id', cajas.map(c=>c.id));
+    const nombrePorCajaId = {};
+    cajas.forEach(c => nombrePorCajaId[c.id] = c.nombre);
+    movsEfectivo = (movsEf || []).map(m => ({
+      fecha: m.fecha,
+      cuenta: nombrePorCajaId[m.caja_id] || 'Efectivo',
+      tipo: m.tipo,
+      unidad_negocio: resolverUnidad(m.referencia),
+      codigo_solicitud: m.referencia || '',
+      concepto: m.concepto,
+      monto: m.monto
+    }));
+  }
 
-  const fechaDefault = document.getElementById('fechaGasto').value || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  const records = gastosAGuardar.map(gasto => ({
-    persona: NOMBRES[currentUser],
-    monto: Number(gasto.monto),
-    concepto: gasto.concepto || null,
-    proveedor: gasto.proveedor || null,
-    categoria: gasto.categoria || 'Otros',
-    forma_pago: formaPago,
-    fecha: gasto.fecha || fechaDefault,
-    created_at: new Date().toISOString()
+  allMovs = (movs || []).concat(movsEfectivo).sort((a,b)=> a.fecha < b.fecha ? 1 : -1);
+
+  // Gastos individuales de Luis Castillo (tabla `gastos`, capturados en efectivo desde la app
+  // prs-gastos) se integran también como egresos de "Caja Chica LCC".
+  const { data: gastosLCC } = await sb.from('gastos').select('*').eq('residente','Luis Castillo').eq('metodo_pago','Efectivo');
+  const movsLCC = (gastosLCC || []).map(g => ({
+    fecha: g.fecha,
+    cuenta: 'Caja Chica LCC',
+    tipo: 'egreso',
+    unidad_negocio: resolverUnidad(g.obra),
+    codigo_solicitud: g.obra || '',
+    concepto: (g.concepto || '') + (g.proveedor ? ' — ' + g.proveedor : ''),
+    monto: g.monto
   }));
+  allMovs = allMovs.concat(movsLCC).sort((a,b)=> a.fecha < b.fecha ? 1 : -1);
 
-  try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/gastos_familia`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify(records)
-    });
-
-    if (resp.ok || resp.status === 201) {
-      if (formaPago === 'efectivo') {
-        try {
-          const totalMonto = records.reduce((s, r) => s + r.monto, 0);
-          const saldoResp = await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(records[0].persona)}&select=saldo`, {
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-          });
-          const saldoData = await saldoResp.json();
-          if (saldoData && saldoData[0]) {
-            const nuevoSaldo = Number(saldoData[0].saldo) - totalMonto;
-            await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(records[0].persona)}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({ saldo: nuevoSaldo })
-            });
-          }
-        } catch(saldoErr) {
-          console.error('Error actualizando saldo:', saldoErr);
-        }
-      }
-      document.getElementById('statusFill').style.width = '100%';
-      mostrarExito(records);
-    } else {
-      const errText = await resp.text();
-      showError('Error al guardar: ' + errText);
-      btn.disabled = false;
-      btn.innerHTML = '✓ Registrar gasto';
-    }
-  } catch(e) {
-    showError('Error de conexión. Verifica el internet.');
-    btn.disabled = false;
-    btn.innerHTML = '✓ Registrar gasto';
+  const dates = allMovs.map(m=>m.fecha).sort();
+  if(dates.length){
+    document.getElementById('f-desde').value = dates[0];
+    document.getElementById('f-hasta').value = dates[dates.length-1];
   }
+
+  // Autocompletar del filtro de código: lista de códigos únicos que sí aparecen en los datos.
+  const codigosUnicos = [...new Set(allMovs.map(m=>m.codigo_solicitud).filter(Boolean))].sort();
+  document.getElementById('codigos-datalist').innerHTML = codigosUnicos.map(c=>`<option value="${c}">`).join('');
+
+  render();
 }
 
-function mostrarExito(records) {
-  const list = Array.isArray(records) ? records : [records];
-  const first = list[0];
-  const formaPagoLabel = first.forma_pago === 'efectivo' ? 'Efectivo' : (first.forma_pago || '—');
-  document.getElementById('screenForm').classList.add('hidden');
-  document.getElementById('screenSuccess').classList.remove('hidden');
-  if (list.length === 1) {
-    document.getElementById('successDetail').textContent = `${first.persona} · ${formaPagoLabel} · ${first.fecha}`;
-    document.getElementById('successCard').innerHTML = [
-      ['Categoría', (CAT_ICONS[first.categoria] || '') + ' ' + first.categoria],
-      ['Concepto', first.concepto || '—'],
-      ['Lugar', first.proveedor || '—'],
-      ['Monto', '$' + Number(first.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })],
-      ['Fecha', first.fecha]
-    ].map(([l, v]) => `<div class="success-card-row"><span class="success-card-label">${l}</span><span class="success-card-val">${v}</span></div>`).join('');
+function toggleSort(campo){
+  if(sortState.campo === campo){ sortState.dir *= -1; }
+  else { sortState = { campo, dir: 1 }; }
+  render();
+}
+
+function currentFilters(){
+  return {
+    desde: document.getElementById('f-desde').value,
+    hasta: document.getElementById('f-hasta').value,
+    cuentas: Array.from(document.getElementById('f-cuenta').selectedOptions).map(o=>o.value),
+    unidad: document.getElementById('f-unidad').value,
+    codigo: document.getElementById('f-codigo').value.trim().toLowerCase(),
+    tipoMov: document.getElementById('f-tipo').value
+  };
+}
+
+function resetFilters(){
+  Array.from(document.getElementById('f-cuenta').options).forEach(opt => opt.selected = false);
+  document.getElementById('f-unidad').value = '';
+  document.getElementById('f-codigo').value = '';
+  document.getElementById('f-tipo').value = '';
+  const dates = allMovs.map(m=>m.fecha).sort();
+  if(dates.length){
+    document.getElementById('f-desde').value = dates[0];
+    document.getElementById('f-hasta').value = dates[dates.length-1];
+  }
+  render();
+}
+
+function applyFilters(rows, incluirCodigo){
+  const f = currentFilters();
+  return rows.filter(m=>{
+    if(f.desde && m.fecha < f.desde) return false;
+    if(f.hasta && m.fecha > f.hasta) return false;
+    if(f.cuentas && f.cuentas.length && !f.cuentas.includes(m.cuenta)) return false;
+    if(f.unidad === '__none__' && m.unidad_negocio) return false;
+    if(f.unidad && f.unidad !== '__none__' && m.unidad_negocio !== f.unidad) return false;
+    if(incluirCodigo && f.codigo && !(m.codigo_solicitud||'').toLowerCase().includes(f.codigo)) return false;
+    return true;
+  });
+}
+
+const CUENTAS_BANCO = ['STP','Santander','BBVA','Banorte','Santander (EOM)'];
+const CUENTAS_EFECTIVO = ['Efectivo PRS','Caja Chica LCC','Caja Chica JPC','Efectivo EOMA'];
+
+// Determina si una transferencia entre cuentas propias fue ingreso o egreso PARA la cuenta
+// indicada. El texto varía según el banco de origen del estado de cuenta, así que se revisan
+// varias palabras clave; además hay una regla de negocio fija para PRS STP (según Jorge, esa
+// cuenta solo se fondea desde las otras 3 — nunca envía), ya que su estado de cuenta no usa
+// ninguna palabra que indique dirección.
+function clasificarTransferencia(cuenta, concepto){
+  const txt = (concepto || '').toUpperCase();
+  if(cuenta === 'STP'){
+    // Excepción: una "DEVOLUCION" es STP regresando dinero a Santander — sí es una salida
+    // para STP, aunque la regla general de esta cuenta sea "solo se fondea, nunca envía".
+    if(txt.includes('DEVOLUCION')) return 'egreso';
+    return 'ingreso';
+  }
+  if(txt.includes('TRASPASO TARJETA A CUENTA')) return 'ingreso'; // entra dinero desde la tarjeta a la cuenta
+  if(txt.includes('RECIBIDO') || txt.includes('ABONO')) return 'ingreso';
+  if(txt.includes('ENVIADO') || txt.includes('COMPRA ORDEN DE PAGO') || txt.includes('PAGO TRANSFERENCIA')) return 'egreso';
+  if(txt.includes('TRASPASO') && txt.includes(' A ')) return 'egreso';
+  return null; // sin clasificar
+}
+
+function render(){
+  const filtered = applyFilters(allMovs, false); // Por cuenta y totales: fecha + unidad, NO código
+  const f = currentFilters();
+
+  let ingresos=0, egresos=0;
+  const porCuenta = {};
+  filtered.forEach(m=>{
+    const cuenta = m.cuenta || 'Sin cuenta';
+    if(!porCuenta[cuenta]) porCuenta[cuenta] = {ing:0, egr:0};
+    const esSaldoInicial = (m.concepto || '').indexOf('Saldo inicial de arranque') === 0;
+    if(esSaldoInicial){
+      // Es el punto de partida de la cuenta (para que el saldo cuadre desde el día 1),
+      // no un ingreso real del negocio — cuenta para el saldo de la cuenta, pero no
+      // se suma a los totales generales de Ingresos de arriba.
+      porCuenta[cuenta].ing += Number(m.monto);
+    } else if(m.tipo === 'ingreso'){
+      ingresos += Number(m.monto);
+      porCuenta[cuenta].ing += Number(m.monto);
+    } else if(m.tipo === 'egreso'){
+      egresos += Number(m.monto);
+      porCuenta[cuenta].egr += Number(m.monto);
+    } else if(m.tipo === 'transferencia_interna'){
+      // No cuenta en los totales generales (Ingresos/Egresos de arriba), porque es dinero que
+      // se mueve entre cuentas propias, no un ingreso o egreso real del grupo. Pero SÍ debe
+      // afectar el saldo de la cuenta individual (la que envía y la que recibe), para que el
+      // Neto de cada cuenta cuadre contra el estado de cuenta real.
+      const dir = clasificarTransferencia(cuenta, m.concepto);
+      if(dir === 'egreso') porCuenta[cuenta].egr += Number(m.monto);
+      else if(dir === 'ingreso') porCuenta[cuenta].ing += Number(m.monto);
+      // (si no se pudo clasificar, no se suma — ver aviso en la lista de movimientos)
+    }
+  });
+  const neto = ingresos - egresos;
+
+  document.getElementById('stat-ingresos').textContent = money(ingresos);
+  document.getElementById('stat-egresos').textContent = money(egresos);
+  const netoEl = document.getElementById('stat-neto');
+  netoEl.textContent = money(neto);
+  netoEl.className = 'value ' + (neto >= 0 ? 'pos' : 'neg');
+  document.getElementById('stat-range').textContent = (f.desde||'—') + '  a  ' + (f.hasta||'—');
+
+  // Monto en bancos / Monto en efectivo: suma del Neto de las cuentas de cada tipo,
+  // ya filtrado por fecha y unidad de negocio (mismo cálculo que "Por cuenta" de abajo).
+  let totalBancos = 0, totalEfectivo = 0;
+  Object.keys(porCuenta).forEach(c=>{
+    const netoCuenta = porCuenta[c].ing - porCuenta[c].egr;
+    if(CUENTAS_BANCO.includes(c)) totalBancos += netoCuenta;
+    else if(CUENTAS_EFECTIVO.includes(c)) totalEfectivo += netoCuenta;
+  });
+  document.getElementById('stat-bancos').textContent = money(totalBancos);
+  document.getElementById('stat-efectivo').textContent = money(totalEfectivo);
+
+  const cuentasBody = document.querySelector('#cuentas-table tbody');
+  cuentasBody.innerHTML = '';
+  Object.keys(porCuenta).sort(ordenCuentas).forEach(c=>{
+    const row = porCuenta[c];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c}</td><td class="ing">${money(row.ing)}</td><td class="egr">${money(row.egr)}</td><td>${money(row.ing-row.egr)}</td>`;
+    cuentasBody.appendChild(tr);
+  });
+  if(!Object.keys(porCuenta).length){
+    cuentasBody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-dim); font-family:Inter;">Sin datos en este rango.</td></tr>';
+  }
+
+  const movsBody = document.getElementById('movs-body');
+  movsBody.innerHTML = '';
+  // La lista de Movimientos sí respeta el código de proyecto y el filtro "Mostrar" — solo afecta
+  // esta lista de abajo. Los totales de arriba y "Por cuenta" usan 'filtered' (fecha + unidad
+  // solamente, sin código), para que el saldo de cada cuenta siga representando la cuenta completa.
+  const paraLista = applyFilters(allMovs, true).filter(m=>{
+    if(f.tipoMov === 'ingreso') return m.tipo === 'ingreso' && (m.concepto||'').indexOf('Saldo inicial de arranque') !== 0;
+    if(f.tipoMov === 'egreso') return m.tipo === 'egreso';
+    if(f.tipoMov === 'sin_transferencias') return m.tipo !== 'transferencia_interna';
+    return true;
+  });
+
+  if(sortState.campo === 'monto'){
+    paraLista.sort((a,b)=> (Number(a.monto) - Number(b.monto)) * sortState.dir);
+  } else if(sortState.campo === 'codigo'){
+    paraLista.sort((a,b)=> (a.codigo_solicitud||'').localeCompare(b.codigo_solicitud||'') * sortState.dir);
+  }
+  document.getElementById('sort-codigo').textContent = sortState.campo === 'codigo' ? (sortState.dir===1?'▲':'▼') : '';
+  document.getElementById('sort-monto').textContent = sortState.campo === 'monto' ? (sortState.dir===1?'▲':'▼') : '';
+
+  document.getElementById('movs-count').textContent = paraLista.length + ' movimiento(s)';
+
+  // Total de lo filtrado, arriba de la columna Monto:
+  // - Solo ingresos / Solo egresos: la suma de esa lista (positivo, "cuánto entró"/"cuánto gasté").
+  // - Todos / sin traspasos: neto (ingresos - egresos de lo que se está mostrando), puede salir
+  //   negativo si hubo más gasto que ingreso.
+  let totalLista = 0;
+  if(f.tipoMov === 'ingreso'){
+    totalLista = paraLista.reduce((s,m)=> s + Number(m.monto), 0);
+  } else if(f.tipoMov === 'egreso'){
+    totalLista = paraLista.reduce((s,m)=> s + Number(m.monto), 0);
   } else {
-    const total = list.reduce((s, r) => s + Number(r.monto), 0);
-    document.getElementById('successDetail').textContent = `${first.persona} · ${formaPagoLabel} · ${first.fecha} · ${list.length} categorías`;
-    document.getElementById('successCard').innerHTML = list.map(r =>
-      `<div class="success-card-row"><span class="success-card-label">${CAT_ICONS[r.categoria] || ''} ${r.categoria}</span><span class="success-card-val">$${Number(r.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>`
-    ).join('') + `<div class="success-card-row" style="font-weight:700;border-top:1px solid var(--border,#eee);margin-top:6px;padding-top:6px;"><span class="success-card-label">Total</span><span class="success-card-val">$${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>`;
+    paraLista.forEach(m=>{
+      if(m.tipo === 'ingreso') totalLista += Number(m.monto);
+      else if(m.tipo === 'egreso') totalLista -= Number(m.monto);
+    });
   }
-}
-
-function nuevoGasto() {
-  document.getElementById('screenForm').classList.remove('hidden');
-  document.getElementById('screenSuccess').classList.add('hidden');
-  ['montoManual','conceptoManual','proveedorManual','categoriaManual'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
+  const totalEl = document.getElementById('movs-total');
+  totalEl.textContent = money(totalLista);
+  totalEl.style.color = totalLista < 0 ? 'var(--cargo)' : (totalLista > 0 ? 'var(--abono)' : 'var(--ink)');
+  document.getElementById('movs-empty').style.display = paraLista.length ? 'none' : 'block';
+  paraLista.forEach(m=>{
+    const tr = document.createElement('tr');
+    tr.className = m.tipo;
+    let sinClasificar = '';
+    if(m.tipo === 'transferencia_interna'){
+      if(!clasificarTransferencia(m.cuenta, m.concepto)) sinClasificar = '<small style="color:var(--cargo);">⚠ sin clasificar (no afecta el saldo de la cuenta — revisar)</small>';
+    }
+    tr.innerHTML = `
+      <td class="fecha">${m.fecha}</td>
+      <td>${m.cuenta||''}</td>
+      <td><span class="tipo-tag ${m.tipo}">${m.tipo.replace('_',' ')}</span></td>
+      <td class="concepto">${m.concepto||''}${m.notas ? '<small>'+m.notas+'</small>' : ''}${sinClasificar}</td>
+      <td>${m.codigo_solicitud ? '<span class="codigo-pill">'+m.codigo_solicitud+'</span>' : ''}</td>
+      <td class="monto">${money(m.monto)}</td>
+    `;
+    movsBody.appendChild(tr);
   });
-  document.getElementById('photoLabel').textContent = 'Toca para tomar foto o seleccionar imagen';
-  document.getElementById('photoPreview').style.display = 'none';
-  document.getElementById('aiResultFoto').classList.remove('visible');
-  document.getElementById('aiResultVoz').classList.remove('visible');
-  document.getElementById('voiceTranscript').classList.remove('visible');
-  document.getElementById('voiceTranscript').textContent = '';
-  document.getElementById('btnInterpretarVoz').style.display = 'none';
-  voiceText = '';
-  extractedData = {};
-  extractedGastos = [];
-  document.getElementById('fechaGasto').value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  switchCaptureTab('foto');
-  document.getElementById('btnRegistrar').disabled = false;
-  document.getElementById('btnRegistrar').innerHTML = '✓ Registrar gasto';
-  document.getElementById('statusFill').style.width = '0%';
-}
 
-// ─────────────────────────────────────────────
-// DASHBOARD
-// ─────────────────────────────────────────────
-const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
-function toggleCatDetail(catId) {
-  const el = document.getElementById(catId);
-  if (!el) return;
-  const wasOpen = el.classList.contains('open');
-  // Cerrar cualquier otra categoría abierta (solo una a la vez)
-  document.querySelectorAll('.cat-bar-item.open').forEach(o => o.classList.remove('open'));
-  if (!wasOpen) el.classList.add('open');
-}
-
-function cambiarMes(delta) {
-  dashMes.month += delta;
-  if (dashMes.month > 12) { dashMes.month = 1; dashMes.year++; }
-  if (dashMes.month < 1) { dashMes.month = 12; dashMes.year--; }
-  cargarDashboard();
-}
-
-function setDashFilter(f) {
-  dashFilter = f;
-  document.querySelectorAll('.dash-filter-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['todos','u1','u2'][i] === f);
-  });
-  cargarDashboard();
-}
-
-async function cargarDashboard() {
-  const content = document.getElementById('dashContent');
-  content.innerHTML = '<div class="dash-loading">Cargando...</div>';
-
-  const mesLabel = MESES_ES[dashMes.month - 1] + ' ' + dashMes.year;
-  document.getElementById('dashMonth').textContent = mesLabel;
-
-  const fechaInicio = `${dashMes.year}-${String(dashMes.month).padStart(2,'0')}-01`;
-  const ultimoDia = new Date(dashMes.year, dashMes.month, 0).getDate();
-  const fechaFin = `${dashMes.year}-${String(dashMes.month).padStart(2,'0')}-${ultimoDia}`;
-
-  try {
-    let url = `${SUPABASE_URL}/rest/v1/gastos_familia?select=persona,monto,concepto,proveedor,categoria,fecha&fecha=gte.${fechaInicio}&fecha=lte.${fechaFin}&order=fecha.desc`;
-    const [resp, saldoResp] = await Promise.all([
-      fetch(url, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }),
-      fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?select=persona,saldo`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } })
-    ]);
-    let gastos = await resp.json();
-    const saldos = await saldoResp.json();
-    const saldoU1 = Number((saldos.find(s => s.persona === NOMBRES.u1) || {}).saldo || 0);
-    const saldoU2 = Number((saldos.find(s => s.persona === NOMBRES.u2) || {}).saldo || 0);
-
-    let saldoHtml = '<div class="saldo-efectivo-card">';
-    if (dashFilter !== 'u2') {
-      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u1}</span><span class="saldo-efectivo-monto">$${fmt(saldoU1)}</span><button class="btn-add-efectivo" onclick="abrirModalEfectivo('${NOMBRES.u1}')" title="Agregar efectivo">+</button></div>`;
-    }
-    if (dashFilter !== 'u1') {
-      saldoHtml += `<div class="saldo-efectivo-item"><span class="saldo-efectivo-nombre">${NOMBRES.u2}</span><span class="saldo-efectivo-monto">$${fmt(saldoU2)}</span><button class="btn-add-efectivo" onclick="abrirModalEfectivo('${NOMBRES.u2}')" title="Agregar efectivo">+</button></div>`;
-    }
-    saldoHtml += '</div>';
-
-    // Filtrar por persona
-    if (dashFilter === 'u1') gastos = gastos.filter(g => g.persona === NOMBRES.u1);
-    if (dashFilter === 'u2') gastos = gastos.filter(g => g.persona === NOMBRES.u2);
-
-    if (!gastos.length) {
-      content.innerHTML = saldoHtml + `<div class="empty-state"><div class="empty-state-icon">📭</div><p>Sin gastos en ${mesLabel}</p></div>`;
-      return;
-    }
-
-    const total = gastos.reduce((s, g) => s + Number(g.monto), 0);
-    const porCat = {};
-    gastos.forEach(g => {
-      const cat = g.categoria || 'Otros';
-      porCat[cat] = (porCat[cat] || 0) + Number(g.monto);
+  const pendList = document.getElementById('pend-list');
+  pendList.innerHTML = '';
+  if(!allPend.length){
+    pendList.innerHTML = '<div class="pend-empty">No hay nada pendiente de conciliar.</div>';
+  } else {
+    allPend.forEach(p=>{
+      const div = document.createElement('div');
+      div.className = 'pend-item';
+      div.innerHTML = `
+        <div class="desc">${p.razon_social_emisor||''} — folio ${p.folio||'s/f'} (${p.tipo})${p.notas ? '<small>'+p.notas+'</small>' : ''}</div>
+        <div class="monto">${money(p.total)}</div>
+      `;
+      pendList.appendChild(div);
     });
-    const catOrdenadas = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
-    const maxMonto = catOrdenadas[0][1];
-
-    // Guardar gastos por categoría para el detalle expandible
-    dashGastosPorCat = {};
-    gastos.forEach(g => {
-      const cat = g.categoria || 'Otros';
-      (dashGastosPorCat[cat] = dashGastosPorCat[cat] || []).push(g);
-    });
-
-    const filtroLabel = dashFilter === 'todos' ? 'entre ambos' : (dashFilter === 'u1' ? NOMBRES.u1 : NOMBRES.u2);
-
-    let html = saldoHtml + `
-      <div class="dash-total">
-        <div>
-          <div class="dash-total-label">Total efectivo · ${filtroLabel}</div>
-          <div class="dash-total-val">$${fmt(total)}</div>
-          <div class="dash-total-sub">${gastos.length} registro${gastos.length !== 1 ? 's' : ''}</div>
-        </div>
-        <div class="dash-total-icon">💵</div>
-      </div>`;
-
-    catOrdenadas.forEach(([cat, monto], i) => {
-      const pct = Math.round(monto / total * 100);
-      const barPct = Math.round(monto / maxMonto * 100);
-      const catId = `catdet-${i}`;
-      const detalle = (dashGastosPorCat[cat] || []).map(g => `
-        <div class="hist-item">
-          <div class="hist-cat-icon">${CAT_ICONS[g.categoria] || '📦'}</div>
-          <div class="hist-info">
-            <div class="hist-concepto">${g.concepto || g.categoria || 'Gasto'}</div>
-            <div class="hist-meta">${g.proveedor ? g.proveedor + ' · ' : ''}${g.fecha}</div>
-          </div>
-          <div class="hist-right">
-            <div class="hist-monto">$${fmt(g.monto)}</div>
-            <div class="hist-persona">${g.persona ? g.persona.split(' ')[0] : ''}</div>
-          </div>
-        </div>`).join('');
-
-      html += `
-        <div class="cat-bar-item" id="${catId}" onclick="toggleCatDetail('${catId}')">
-          <div class="cat-bar-header">
-            <div class="cat-bar-name">${CAT_ICONS[cat] || '📦'} ${cat} <span class="cat-bar-chevron">›</span></div>
-            <div class="cat-bar-monto">$${fmt(monto)}</div>
-          </div>
-          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${barPct}%"></div></div>
-          <div class="cat-bar-pct">${pct}% del total</div>
-          <div class="cat-bar-detail"><div class="cat-bar-detail-inner">${detalle}</div></div>
-        </div>`;
-    });
-
-    content.innerHTML = html;
-  } catch(e) {
-    content.innerHTML = '<div class="dash-loading">Error al cargar. Verifica conexión.</div>';
-    console.error(e);
   }
 }
 
-// ─────────────────────────────────────────────
-// HISTORIAL
-// ─────────────────────────────────────────────
-function setHistFilter(f) {
-  histFilter = f;
-  document.querySelectorAll('.hist-filter-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['todos','u1','u2'][i] === f);
-  });
-  cargarHistorial();
-}
-
-async function cargarHistorial() {
-  const content = document.getElementById('histContent');
-  content.innerHTML = '<div class="hist-loading">Cargando...</div>';
-
-  try {
-    let url = `${SUPABASE_URL}/rest/v1/gastos_familia?select=*&order=created_at.desc&limit=80`;
-    const resp = await fetch(url, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    let gastos = await resp.json();
-
-    if (histFilter === 'u1') gastos = gastos.filter(g => g.persona === NOMBRES.u1);
-    if (histFilter === 'u2') gastos = gastos.filter(g => g.persona === NOMBRES.u2);
-
-    if (!gastos.length) {
-      content.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Sin registros aún</p></div>`;
-      return;
-    }
-
-    content.innerHTML = gastos.map(g => `
-      <div class="hist-item">
-        <div class="hist-cat-icon">${CAT_ICONS[g.categoria] || '📦'}</div>
-        <div class="hist-info">
-          <div class="hist-concepto">${g.concepto || g.categoria || 'Gasto'}</div>
-          <div class="hist-meta">${g.proveedor ? g.proveedor + ' · ' : ''}${g.fecha}</div>
-        </div>
-        <div class="hist-right">
-          <div class="hist-monto">$${fmt(g.monto)}</div>
-          <div class="hist-persona">${g.persona ? g.persona.split(' ')[0] : ''}</div>
-        </div>
-      </div>`).join('');
-  } catch(e) {
-    content.innerHTML = '<div class="hist-loading">Error al cargar.</div>';
-    console.error(e);
-  }
-}
-
-// ─────────────────────────────────────────────
-// CONFIG (acceso largo toque en header)
-// ─────────────────────────────────────────────
-let headerPressTimer = null;
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('fechaGasto').value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  const header = document.querySelector('.header-user');
-  if (header) {
-    header.addEventListener('touchstart', () => {
-      headerPressTimer = setTimeout(() => { abrirConfig(); }, 1200);
-    });
-    header.addEventListener('touchend', () => clearTimeout(headerPressTimer));
-    header.addEventListener('mousedown', () => {
-      headerPressTimer = setTimeout(() => { abrirConfig(); }, 1200);
-    });
-    header.addEventListener('mouseup', () => clearTimeout(headerPressTimer));
-  }
+['f-desde','f-hasta','f-cuenta','f-unidad','f-tipo'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', render);
 });
+document.getElementById('f-codigo').addEventListener('input', render);
 
-function abrirConfig() {
-  const cfg = JSON.parse(localStorage.getItem('familia_config') || '{}');
-  document.getElementById('configNombre1').value = cfg.u1 || NOMBRES.u1 || '';
-  document.getElementById('configNombre2').value = cfg.u2 || NOMBRES.u2 || '';
-  document.getElementById('configUrl').value = cfg.url || SUPABASE_URL || '';
-  document.getElementById('configKey').value = cfg.key || SUPABASE_KEY || '';
-
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  ['tabCapturar','tabDashboard','tabHistorial'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden');
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){ showApp(session); }
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event === 'SIGNED_OUT'){ location.reload(); }
   });
-  document.getElementById('tabConfig').classList.remove('hidden');
-  document.getElementById('tabConfig').style.display = 'block';
-}
-
-function guardarConfig() {
-  const n1 = document.getElementById('configNombre1').value.trim();
-  const n2 = document.getElementById('configNombre2').value.trim();
-  const url = document.getElementById('configUrl').value.trim().replace(/\/$/, '');
-  const key = document.getElementById('configKey').value.trim();
-
-  if (!n1 || !n2 || !url || !key) return;
-
-  const esPrimerUso = !NOMBRES.u1; // si aún no hay config en memoria
-
-  localStorage.setItem('familia_config', JSON.stringify({ u1: n1, u2: n2, url, key }));
-  NOMBRES.u1 = n1; NOMBRES.u2 = n2;
-  SUPABASE_URL = url; SUPABASE_KEY = key;
-
-  // Actualizar labels de filtros (pueden no existir si es primer uso, sin crash)
-  ['dashFilterU1','dashFilterU2','histFilterU1','histFilterU2'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = i % 2 === 0 ? n1 : n2;
-  });
-
-  if (esPrimerUso) {
-    // Primer uso: ir directo a selección de usuario
-    document.getElementById('tabConfig').classList.add('hidden');
-    document.getElementById('tabConfig').style.display = 'none';
-    mostrarSeleccionUsuario();
-  } else {
-    // Cambio de config en uso normal: confirmar y quedarse
-    document.getElementById('configSaveMsg').classList.add('visible');
-    setTimeout(() => document.getElementById('configSaveMsg').classList.remove('visible'), 2500);
-  }
-}
-
-// ─────────────────────────────────────────────
-// UTILS
-// ─────────────────────────────────────────────
-function fmt(n) {
-  return Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// ─────────────────────────────────────────────
-// ARRANQUE
-// ─────────────────────────────────────────────
-init();
-// ─── MODAL INGRESO EFECTIVO ───
-let efectivoPersona = null;
-
-function abrirModalEfectivo(persona) {
-  efectivoPersona = persona;
-  document.getElementById('efectivoModalTitulo').textContent = `Agregar efectivo · ${persona.split(' ')[0]}`;
-  document.getElementById('efectivoMontoInput').value = '';
-  document.getElementById('efectivoModalOverlay').classList.add('visible');
-  setTimeout(() => document.getElementById('efectivoMontoInput').focus(), 100);
-}
-
-function cerrarModalEfectivo() {
-  document.getElementById('efectivoModalOverlay').classList.remove('visible');
-  efectivoPersona = null;
-}
-
-async function confirmarEfectivo() {
-  const monto = parseFloat(document.getElementById('efectivoMontoInput').value);
-  if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
-  try {
-    const saldoResp = await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(efectivoPersona)}&select=saldo`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    const saldoData = await saldoResp.json();
-    const actual = saldoData && saldoData[0] ? Number(saldoData[0].saldo) : 0;
-    const nuevo = actual + monto;
-    await fetch(`${SUPABASE_URL}/rest/v1/saldos_efectivo?persona=eq.${encodeURIComponent(efectivoPersona)}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({ saldo: nuevo })
-    });
-    cerrarModalEfectivo();
-    loadDash(); // refrescar el dashboard
-  } catch(e) {
-    alert('Error al actualizar saldo: ' + e.message);
-  }
-}
-
+})();
 </script>
-  <!-- Modal ingreso efectivo -->
-  <div class="efectivo-modal-overlay" id="efectivoModalOverlay">
-    <div class="efectivo-modal">
-      <h3 id="efectivoModalTitulo">Agregar efectivo</h3>
-      <input type="number" id="efectivoMontoInput" placeholder="Monto ($)" step="0.01" min="0">
-      <div class="efectivo-modal-btns">
-        <button class="btn-cancelar-efectivo" onclick="cerrarModalEfectivo()">Cancelar</button>
-        <button class="btn-confirmar-efectivo" onclick="confirmarEfectivo()">Confirmar</button>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>
