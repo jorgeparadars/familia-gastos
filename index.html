@@ -1427,7 +1427,7 @@ async function confirmarEfectivo() {
       body: JSON.stringify({ saldo: nuevo })
     });
     cerrarModalEfectivo();
-    loadDash(); // refrescar el dashboard
+    cargarDashboard(); // refrescar el dashboard
   } catch(e) {
     alert('Error al actualizar saldo: ' + e.message);
   }
